@@ -1,8 +1,8 @@
-import eqoi
+import sooryn
 
-# Eqoi Gallery — a working application that exercises the framework the way an
+# Sooryn Gallery — a working application that exercises the framework the way an
 # application would: a header, a tab bar, a status line, and four pages that
-# each put one part of Eqoi under the hands.
+# each put one part of Sooryn under the hands.
 #
 # Everything here uses the default font, which fonts provides and ui installs
 # automatically. Nothing is loaded from disk, so this runs from a bare build.
@@ -12,20 +12,20 @@ TABS_H:   i32 = 38
 STATUS_H: i32 = 30
 TABLE_ROWS: i32 = 5000
 
-fun page_controls(app: EqoiApp, area: UIRect, checks: i64, notify: i64, autosave: i64, volume: i64, progress: i64, clicks: i64, mode: i64, modal: i64):
-    columns: EqoiLayout = EqoiLayout.row_in(area, 16, 16)
+fun page_controls(app: SoorynApp, area: UIRect, checks: i64, notify: i64, autosave: i64, volume: i64, progress: i64, clicks: i64, mode: i64, modal: i64):
+    columns: SoorynLayout = SoorynLayout.row_in(area, 16, 16)
     columns.flex_even(2)
     left: UIRect = columns.next_flex(1)
     right: UIRect = columns.next_flex(1)
 
     # ---- left column ----
     app.panel_begin(left.left, left.top, left.right - left.left, left.bottom - left.top)
-    l: EqoiLayout = EqoiLayout.column_in(left, 18, 14)
+    l: SoorynLayout = SoorynLayout.column_in(left, 18, 14)
     app.title(l.next(0, 24).left, left.top + 18, "Controls")
     l.skip(6)
 
     row: UIRect = l.next(0, 40)
-    buttons: EqoiLayout = EqoiLayout.row_in(row, 0, 10)
+    buttons: SoorynLayout = SoorynLayout.row_in(row, 0, 10)
     buttons.flex(3, 2)
     primary: UIRect = buttons.next_flex(2)
     second: UIRect = buttons.next_flex(1)
@@ -56,7 +56,7 @@ fun page_controls(app: EqoiApp, area: UIRect, checks: i64, notify: i64, autosave
 
     # ---- right column ----
     app.panel_begin(right.left, right.top, right.right - right.left, right.bottom - right.top)
-    r: EqoiLayout = EqoiLayout.column_in(right, 18, 14)
+    r: SoorynLayout = SoorynLayout.column_in(right, 18, 14)
     app.title(r.next(0, 24).left, right.top + 18, "More")
     r.skip(6)
 
@@ -89,13 +89,13 @@ fun page_controls(app: EqoiApp, area: UIRect, checks: i64, notify: i64, autosave
         app.set_bool(modal, 1)
     app.panel_end()
 
-fun page_layout(app: EqoiApp, area: UIRect):
-    page: EqoiLayout = EqoiLayout.column_in(area, 16, 14)
+fun page_layout(app: SoorynApp, area: UIRect):
+    page: SoorynLayout = SoorynLayout.column_in(area, 16, 14)
 
     # Flexible weights, drawn as the bars they produce.
     app.title(page.next(0, 22).left, page.cursor_y - 22, "Flex weights 1 : 2 : 1")
     weights: UIRect = page.next(0, 40)
-    bars: EqoiLayout = EqoiLayout.row_in(weights, 0, 8)
+    bars: SoorynLayout = SoorynLayout.row_in(weights, 0, 8)
     bars.flex(4, 3)
     one: UIRect = bars.next_flex(1)
     two: UIRect = bars.next_flex(2)
@@ -108,12 +108,12 @@ fun page_layout(app: EqoiApp, area: UIRect):
     app.title(page.next(0, 22).left, page.cursor_y - 22, "Cross-axis alignment")
     aligned: UIRect = page.next(0, 76)
     app.outline(aligned.left, aligned.top, aligned.right - aligned.left, 76, app.theme.border)
-    lanes: EqoiLayout = EqoiLayout.row_in(aligned, 8, 8)
+    lanes: SoorynLayout = SoorynLayout.row_in(aligned, 8, 8)
     lanes.flex_even(4)
     modes: i32 = 0
     while modes < 4:
         lane: UIRect = lanes.next_flex(1)
-        inner: EqoiLayout = EqoiLayout.column_in(lane, 0, 0)
+        inner: SoorynLayout = SoorynLayout.column_in(lane, 0, 0)
         inner.align(modes)
         block: UIRect = inner.next(40, 40)
         app.rect(block.left, block.top, block.right - block.left, 40, app.theme.accent)
@@ -124,7 +124,7 @@ fun page_layout(app: EqoiApp, area: UIRect):
     app.title(page.next(0, 22).left, page.cursor_y + 4, "Grid, 4 columns, one cell spanning 2")
     page.skip(4)
     grid_area: UIRect = page.next(0, 0)
-    g: EqoiLayout = EqoiLayout.grid_in(grid_area, 0, 8, 4)
+    g: SoorynLayout = SoorynLayout.grid_in(grid_area, 0, 8, 4)
     cell: UIRect = g.next_cell_span(2, 34)
     app.rect(cell.left, cell.top, cell.right - cell.left, 34, app.theme.accent)
     app.label(cell.left + 10, cell.top + 9, "span 2")
@@ -138,8 +138,8 @@ fun page_layout(app: EqoiApp, area: UIRect):
             app.label(c.left + 10, c.top + 9, @"{i}")
         i = i + 1
 
-fun page_table(app: EqoiApp, area: UIRect, scroll: i64, selected: i64, sort_col: i64):
-    page: EqoiLayout = EqoiLayout.column_in(area, 16, 10)
+fun page_table(app: SoorynApp, area: UIRect, scroll: i64, selected: i64, sort_col: i64):
+    page: SoorynLayout = SoorynLayout.column_in(area, 16, 10)
     chosen: i32 = app.get_int(selected)
     total: i32 = TABLE_ROWS
     app.muted_label(page.next(0, 18).left, page.cursor_y - 18, @"{total} rows. Only the visible ones are built. Selected: {chosen}")
@@ -163,8 +163,8 @@ fun page_table(app: EqoiApp, area: UIRect, scroll: i64, selected: i64, sort_col:
         row = row + 1
     app.table_end()
 
-fun page_text(app: EqoiApp, area: UIRect, name: i64, note: i64):
-    page: EqoiLayout = EqoiLayout.column_in(area, 16, 12)
+fun page_text(app: SoorynApp, area: UIRect, name: i64, note: i64):
+    page: SoorynLayout = SoorynLayout.column_in(area, 16, 12)
     app.title(page.next(0, 24).left, page.cursor_y - 24, "Text editing")
     app.muted_label(page.next(0, 18).left, page.cursor_y - 18, "Click to place the caret. Drag to select. Shift+arrows extend.")
     app.muted_label(page.next(0, 18).left, page.cursor_y - 18, "Home / End jump. Ctrl+A selects all. Backspace and Delete respect the selection.")
@@ -258,8 +258,8 @@ fun build_fade() -> i64:
         y = y + 1
     return buffer
 
-fun page_images(app: EqoiApp, area: UIRect, swatch: EqoiImage, mark: EqoiImage, fade: EqoiImage):
-    columns: EqoiLayout = EqoiLayout.row_in(area, 16, 16)
+fun page_images(app: SoorynApp, area: UIRect, swatch: SoorynImage, mark: SoorynImage, fade: SoorynImage):
+    columns: SoorynLayout = SoorynLayout.row_in(area, 16, 16)
     columns.flex_even(2)
     left: UIRect = columns.next_flex(1)
     right: UIRect = columns.next_flex(1)
@@ -358,7 +358,7 @@ fun page_images(app: EqoiApp, area: UIRect, swatch: EqoiImage, mark: EqoiImage, 
     app.panel_end()
 
 fun main() -> i32:
-    app: EqoiApp = EqoiApp.create("Eqoi Gallery", 1080, 700)
+    app: SoorynApp = SoorynApp.create("Sooryn Gallery", 1080, 700)
     if app.is_valid() == 0:
         return 1
 
@@ -386,9 +386,9 @@ fun main() -> i32:
     swatch_bytes: i64 = build_swatch()
     mark_bytes: i64 = build_mark()
     fade_bytes: i64 = build_fade()
-    swatch: EqoiImage = app.new_image_rgba(swatch_bytes, 32, 32, 0)
-    mark: EqoiImage = app.new_image_rgba(mark_bytes, 24, 24, 0)
-    fade: EqoiImage = app.new_image_rgba(fade_bytes, 16, 16, 0)
+    swatch: SoorynImage = app.new_image_rgba(swatch_bytes, 32, 32, 0)
+    mark: SoorynImage = app.new_image_rgba(mark_bytes, 24, 24, 0)
+    fade: SoorynImage = app.new_image_rgba(fade_bytes, 16, 16, 0)
     if swatch_bytes != 0:
         Memory.free(swatch_bytes)
     if mark_bytes != 0:
@@ -415,7 +415,7 @@ fun main() -> i32:
 
             # ---- header ----
             app.rect(0, 0, width, HEADER_H, app.theme.surface)
-            app.title(20, 16, "Eqoi Gallery")
+            app.title(20, 16, "Sooryn Gallery")
             app.toggle(width - 150, 16, "Light", light)
 
             # ---- tabs ----

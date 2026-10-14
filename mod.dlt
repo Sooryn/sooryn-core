@@ -1,8 +1,8 @@
 # ============================
-#  Eqoi Application Framework
+#  Sooryn Application Framework
 # ============================
 # High-level native app framework built on top of ui.
-module eqoi
+module sooryn
 import window
 import ui
 import input
@@ -12,42 +12,42 @@ import unicode
 
 type UIColor = i32
 
-load eqoi/theme
-load eqoi/layout
-load eqoi/app
-load eqoi/identity
-load eqoi/direction
-load eqoi/scale
-load eqoi/focus
-load eqoi/textedit
-load eqoi/textmap
-load eqoi/table
-load eqoi/anim
-load eqoi/widgets
-load eqoi/controls
-load eqoi/state
-load eqoi/images
-load eqoi/icons
-load eqoi/shell
-load eqoi/headless
+load sooryn/theme
+load sooryn/layout
+load sooryn/app
+load sooryn/identity
+load sooryn/direction
+load sooryn/scale
+load sooryn/focus
+load sooryn/textedit
+load sooryn/textmap
+load sooryn/table
+load sooryn/anim
+load sooryn/widgets
+load sooryn/controls
+load sooryn/state
+load sooryn/images
+load sooryn/icons
+load sooryn/shell
+load sooryn/headless
 
-export EqoiTheme
-export EqoiLayout
-export EqoiApp
-export EqoiInt
-export EqoiBool
-export EqoiText
-export EqoiImage
-export EQOI_LAYOUT_COLUMN
-export EQOI_LAYOUT_ROW
-export EQOI_LAYOUT_GRID
-export EQOI_DIR_LTR
-export EQOI_DIR_RTL
-export EQOI_ALIGN_START
-export EQOI_ALIGN_CENTER
-export EQOI_ALIGN_END
-export EQOI_ALIGN_STRETCH
-export eqoi_theme_dark
-export eqoi_theme_light
-export eqoi_app_create
-export eqoi_app_headless
+export SoorynTheme
+export SoorynLayout
+export SoorynApp
+export SoorynInt
+export SoorynBool
+export SoorynText
+export SoorynImage
+export SOORYN_LAYOUT_COLUMN
+export SOORYN_LAYOUT_ROW
+export SOORYN_LAYOUT_GRID
+export SOORYN_DIR_LTR
+export SOORYN_DIR_RTL
+export SOORYN_ALIGN_START
+export SOORYN_ALIGN_CENTER
+export SOORYN_ALIGN_END
+export SOORYN_ALIGN_STRETCH
+export sooryn_theme_dark
+export sooryn_theme_light
+export sooryn_app_create
+export sooryn_app_headless

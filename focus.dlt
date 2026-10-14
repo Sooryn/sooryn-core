@@ -1,5 +1,5 @@
 # ============================
-#  Eqoi Keyboard Focus
+#  Sooryn Keyboard Focus
 # ============================
 # Tab order in an immediate-mode frame is the order widgets are drawn in.
 # There is no retained tree to walk, so the order is rebuilt every frame: each
@@ -28,11 +28,11 @@
 # quiet for the pointer, drawn for the keyboard. Turning the ring off outright
 # would fix the click and lose the keyboard, which is the trade nobody wants
 # and everybody makes.
-EQOI_FOCUS_RING_KEYBOARD: i32 = 0
-EQOI_FOCUS_RING_ALWAYS: i32 = 1
-EQOI_FOCUS_RING_NEVER: i32 = 2
+SOORYN_FOCUS_RING_KEYBOARD: i32 = 0
+SOORYN_FOCUS_RING_ALWAYS: i32 = 1
+SOORYN_FOCUS_RING_NEVER: i32 = 2
 
-attach EqoiApp:
+attach SoorynApp:
     fun begin_focus_frame(self):
         self.focus_move = 0
         if self.input_state.tab_pressed == 1:
@@ -168,14 +168,14 @@ attach EqoiApp:
         self.focus_id = id
         self.focus_visible = 1
 
-    # EQOI_FOCUS_RING_KEYBOARD (the default), _ALWAYS or _NEVER.
+    # SOORYN_FOCUS_RING_KEYBOARD (the default), _ALWAYS or _NEVER.
     fun set_focus_ring(self, mode: i32):
         self.focus_ring_mode = mode
 
     fun focus_ring_shown(self) -> i32:
-        if self.focus_ring_mode == EQOI_FOCUS_RING_NEVER:
+        if self.focus_ring_mode == SOORYN_FOCUS_RING_NEVER:
             return 0
-        if self.focus_ring_mode == EQOI_FOCUS_RING_ALWAYS:
+        if self.focus_ring_mode == SOORYN_FOCUS_RING_ALWAYS:
             return 1
         return self.focus_visible
 

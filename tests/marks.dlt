@@ -1,4 +1,4 @@
-import eqoi
+import sooryn
 import fonts
 
 # Arabic diacritics. A mark sits on the letter before it: it takes no width
@@ -11,9 +11,9 @@ import fonts
 ARABIC_FONT: str = "C:/Windows/Fonts/arial.ttf"
 
 fun main() -> i32:
-    app: EqoiApp = EqoiApp.headless(400, 200)
+    app: SoorynApp = SoorynApp.headless(400, 200)
     if app.is_valid() == 0:
-        print("eqoi marks: headless app creation failed")
+        print("sooryn marks: headless app creation failed")
         return 1
 
     # ---------------------------------------------------------------
@@ -22,25 +22,25 @@ fun main() -> i32:
     plain: i32 = app.text_width("بب")
     marked: i32 = app.text_width("بَب")
     if plain <= 0:
-        print("eqoi marks: the plain text measured nothing")
+        print("sooryn marks: the plain text measured nothing")
         app.destroy()
         return 2
     if marked != plain:
-        print("eqoi marks: a diacritic changed the width of the word")
+        print("sooryn marks: a diacritic changed the width of the word")
         app.destroy()
         return 3
 
     # Several marks change nothing either.
     many: i32 = app.text_width("بَّب")
     if many != plain:
-        print("eqoi marks: stacked diacritics changed the width")
+        print("sooryn marks: stacked diacritics changed the width")
         app.destroy()
         return 4
 
     # And a mark on its own still occupies no width, so a stray one cannot
     # push a line around.
     if app.text_width("َ") != 0:
-        print("eqoi marks: a lone diacritic took width")
+        print("sooryn marks: a lone diacritic took width")
         app.destroy()
         return 5
     app.destroy()
@@ -48,11 +48,11 @@ fun main() -> i32:
     # ---------------------------------------------------------------
     # Placement, which needs a face that has the glyphs.
     # ---------------------------------------------------------------
-    b: EqoiApp = EqoiApp.headless(300, 120)
+    b: SoorynApp = SoorynApp.headless(300, 120)
     face: FontFace = font_face_load_ttf(ARABIC_FONT, 28)
     if face.is_valid() == 0:
         b.destroy()
-        print("eqoi marks: ok (width checks only; no Arabic face on this machine)")
+        print("sooryn marks: ok (width checks only; no Arabic face on this machine)")
         return 0
     b.use_font(face)
 
@@ -80,7 +80,7 @@ fun main() -> i32:
     if bare_right == 0:
         b.destroy()
         face.destroy()
-        print("eqoi marks: the bare letter drew nothing")
+        print("sooryn marks: the bare letter drew nothing")
         return 6
 
     if b.begin_offscreen() == 1:
@@ -102,18 +102,18 @@ fun main() -> i32:
 
     # The mark reaches higher than the letter alone.
     if marked_top >= bare_top:
-        print("eqoi marks: the diacritic did not appear above the letter")
+        print("sooryn marks: the diacritic did not appear above the letter")
         b.destroy()
         face.destroy()
         return 7
     # And it did not extend the word to the right, because it took no width.
     if marked_right > bare_right + 2:
-        print("eqoi marks: the diacritic was drawn beside the letter, not on it")
+        print("sooryn marks: the diacritic was drawn beside the letter, not on it")
         b.destroy()
         face.destroy()
         return 8
 
     b.destroy()
     face.destroy()
-    print("eqoi marks: ok")
+    print("sooryn marks: ok")
     return 0

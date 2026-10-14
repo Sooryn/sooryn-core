@@ -1,11 +1,11 @@
 # ============================
-#  Eqoi Widgets
+#  Sooryn Widgets
 # ============================
 
-attach EqoiApp:
+attach SoorynApp:
     fun push_commands(self, commands: UIDrawList):
         # UIDrawList may grow its buffers while a widget records commands.
-        # Copy the updated value back once so Eqoi keeps the new pointers,
+        # Copy the updated value back once so Sooryn keeps the new pointers,
         # counts and text-arena offsets.
         self.commands = commands
 

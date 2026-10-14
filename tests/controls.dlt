@@ -1,13 +1,13 @@
-import eqoi
+import sooryn
 
 # The controls an application reaches for once the basics are in place.
 # Geometry is worked out by hand; a spinner at (100, 100, 160, 32) puts its
 # decrement button at x 100..132 and its increment at 228..260.
 
 fun main() -> i32:
-    app: EqoiApp = EqoiApp.headless(600, 400)
+    app: SoorynApp = SoorynApp.headless(600, 400)
     if app.is_valid() == 0:
-        print("eqoi controls: headless app creation failed")
+        print("sooryn controls: headless app creation failed")
         return 1
     app.inject_delta_us(10000)
 
@@ -24,11 +24,11 @@ fun main() -> i32:
         app.radio(20, 80, "Third", 2, choice)
         app.end()
     if app.get_int(choice) != 1:
-        print("eqoi controls: the radio did not take the choice")
+        print("sooryn controls: the radio did not take the choice")
         app.destroy()
         return 2
     if picked != 1:
-        print("eqoi controls: the radio did not report being chosen")
+        print("sooryn controls: the radio did not report being chosen")
         app.destroy()
         return 3
 
@@ -42,7 +42,7 @@ fun main() -> i32:
         picked = app.radio(20, 50, "Second", 1, choice)
         app.end()
     if picked != 0:
-        print("eqoi controls: the radio reported a change that did not happen")
+        print("sooryn controls: the radio reported a change that did not happen")
         app.destroy()
         return 4
     app.inject_left_up()
@@ -59,7 +59,7 @@ fun main() -> i32:
         app.spinner(100, 100, 160, 32, 0, 20, 5, count)
         app.end()
     if app.get_int(count) != 15:
-        print("eqoi controls: the increment button did not raise the value")
+        print("sooryn controls: the increment button did not raise the value")
         app.destroy()
         return 5
     app.inject_left_up()
@@ -73,7 +73,7 @@ fun main() -> i32:
         app.spinner(100, 100, 160, 32, 0, 20, 5, count)
         app.end()
     if app.get_int(count) != 10:
-        print("eqoi controls: the decrement button did not lower the value")
+        print("sooryn controls: the decrement button did not lower the value")
         app.destroy()
         return 6
     app.inject_left_up()
@@ -88,7 +88,7 @@ fun main() -> i32:
         app.spinner(100, 100, 160, 32, 0, 20, 5, count)
         app.end()
     if app.get_int(count) != 15:
-        print("eqoi controls: the right arrow did not step the spinner")
+        print("sooryn controls: the right arrow did not step the spinner")
         app.destroy()
         return 7
 
@@ -101,7 +101,7 @@ fun main() -> i32:
             app.end()
         i = i + 1
     if app.get_int(count) != 20:
-        print("eqoi controls: the spinner passed its maximum")
+        print("sooryn controls: the spinner passed its maximum")
         app.destroy()
         return 8
 
@@ -115,7 +115,7 @@ fun main() -> i32:
         hit = app.tree_row(0, 200, 300, 24, 0, "Branch", 1, 0, 0)
         app.end()
     if hit != 1:
-        print("eqoi controls: a press on the twisty was not reported")
+        print("sooryn controls: a press on the twisty was not reported")
         app.destroy()
         return 9
     app.inject_left_up()
@@ -129,7 +129,7 @@ fun main() -> i32:
         hit = app.tree_row(0, 200, 300, 24, 0, "Branch", 1, 0, 0)
         app.end()
     if hit != 2:
-        print("eqoi controls: a press on the row was not reported as a choice")
+        print("sooryn controls: a press on the row was not reported as a choice")
         app.destroy()
         return 10
     app.inject_left_up()
@@ -140,7 +140,7 @@ fun main() -> i32:
         hit = app.tree_row(0, 200, 300, 24, 0, "Branch", 1, 0, 0)
         app.end()
     if hit != 0:
-        print("eqoi controls: an untouched row reported a press")
+        print("sooryn controls: an untouched row reported a press")
         app.destroy()
         return 11
 
@@ -164,11 +164,11 @@ fun main() -> i32:
             app.menu_end()
         app.end()
     if chosen != 1:
-        print("eqoi controls: the first menu item was not chosen")
+        print("sooryn controls: the first menu item was not chosen")
         app.destroy()
         return 12
     if app.get_bool(open_menu) != 0:
-        print("eqoi controls: choosing an item did not close the menu")
+        print("sooryn controls: choosing an item did not close the menu")
         app.destroy()
         return 13
     app.inject_left_up()
@@ -183,7 +183,7 @@ fun main() -> i32:
             app.menu_end()
         app.end()
     if app.get_bool(open_menu) != 0:
-        print("eqoi controls: Escape did not close the menu")
+        print("sooryn controls: Escape did not close the menu")
         app.destroy()
         return 14
 
@@ -202,7 +202,7 @@ fun main() -> i32:
             app.menu_end()
         app.end()
     if app.get_bool(open_menu) != 0:
-        print("eqoi controls: a press outside did not dismiss the menu")
+        print("sooryn controls: a press outside did not dismiss the menu")
         app.destroy()
         return 15
     app.inject_left_up()
@@ -215,11 +215,11 @@ fun main() -> i32:
         app.toasts_draw()
         app.end()
     if app.ts_count != 1:
-        print("eqoi controls: the toast was not kept")
+        print("sooryn controls: the toast was not kept")
         app.destroy()
         return 16
     if app.animating() != 1:
-        print("eqoi controls: a live toast did not keep the loop awake")
+        print("sooryn controls: a live toast did not keep the loop awake")
         app.destroy()
         return 17
 
@@ -231,11 +231,11 @@ fun main() -> i32:
             app.end()
         i = i + 1
     if app.ts_count != 0:
-        print("eqoi controls: the toast outlived its time")
+        print("sooryn controls: the toast outlived its time")
         app.destroy()
         return 18
     if app.animating() != 0:
-        print("eqoi controls: an expired toast still keeps the loop awake")
+        print("sooryn controls: an expired toast still keeps the loop awake")
         app.destroy()
         return 19
 
@@ -249,10 +249,10 @@ fun main() -> i32:
         app.toasts_draw()
         app.end()
     if accepted != 4:
-        print("eqoi controls: the toast cap did not hold")
+        print("sooryn controls: the toast cap did not hold")
         app.destroy()
         return 20
 
     app.destroy()
-    print("eqoi controls: ok")
+    print("sooryn controls: ok")
     return 0

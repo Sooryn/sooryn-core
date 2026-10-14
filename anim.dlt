@@ -1,10 +1,10 @@
 # ============================
-#  Eqoi Animation
+#  Sooryn Animation
 # ============================
 # Frame timing and per-widget animated values.
 #
 # The clock is TimeOps.time_now_ns(), which the platform layer provides on
-# every target with no import, so animation costs Eqoi no new dependency.
+# every target with no import, so animation costs Sooryn no new dependency.
 #
 # An animated value is keyed by widget identity, so a widget declares what it
 # wants to be and the value walks there over time:
@@ -15,20 +15,20 @@
 # The first time an identity is seen its value starts AT the target, so a
 # widget does not fade in from nothing the frame it appears.
 #
-# The part that makes any of this work: Eqoi's frame loop blocks on
+# The part that makes any of this work: Sooryn's frame loop blocks on
 # Window.wait(), which returns only when the operating system has an event.
 # An animation has no events. So the loop asks whether anything is still
 # moving, and blocks with a timeout instead of indefinitely while it is. When
 # nothing is animating the loop goes fully idle again, which is the property
-# that makes an Eqoi application cost nothing while it sits on screen.
+# that makes an Sooryn application cost nothing while it sits on screen.
 
-EQOI_ANIM_FIXED: i64 = 256
-EQOI_ANIM_INITIAL: i32 = 64
+SOORYN_ANIM_FIXED: i64 = 256
+SOORYN_ANIM_INITIAL: i32 = 64
 # Slots untouched for this many frames are reclaimed, so widgets that stop
 # being drawn do not hold their entries forever.
-EQOI_ANIM_STALE: i32 = 240
+SOORYN_ANIM_STALE: i32 = 240
 
-attach EqoiApp:
+attach SoorynApp:
     # ---------------------------------------------------------------
     # Frame timing
     # ---------------------------------------------------------------
@@ -78,8 +78,8 @@ attach EqoiApp:
         old_touched: i64 = self.anim_touched
 
         next_capacity: i32 = old_capacity * 2
-        if next_capacity < EQOI_ANIM_INITIAL:
-            next_capacity = EQOI_ANIM_INITIAL
+        if next_capacity < SOORYN_ANIM_INITIAL:
+            next_capacity = SOORYN_ANIM_INITIAL
 
         keys: i64 = Memory.malloc_zeroed((next_capacity as i64) * 8)
         if keys == 0:
@@ -109,7 +109,7 @@ attach EqoiApp:
             while i < old_capacity:
                 key = Memory.read_i64(old_keys + (i as i64) * 8)
                 seen = Memory.read_i32(old_touched + (i as i64) * 4)
-                if key != 0 and self.frame_counter - seen < EQOI_ANIM_STALE:
+                if key != 0 and self.frame_counter - seen < SOORYN_ANIM_STALE:
                     slot: i32 = self._anim_find(key)
                     if slot >= 0:
                         Memory.write_i64(self.anim_keys + (slot as i64) * 8, key)
@@ -162,7 +162,7 @@ attach EqoiApp:
             if slot < 0:
                 return target
 
-        target_fp: i64 = (target as i64) * EQOI_ANIM_FIXED
+        target_fp: i64 = (target as i64) * SOORYN_ANIM_FIXED
         if self._anim_slot_key(slot) == 0:
             # First sight: start where the widget already is.
             Memory.write_i64(self.anim_keys + (slot as i64) * 8, id)
@@ -176,7 +176,7 @@ attach EqoiApp:
         if current_fp == target_fp:
             return target
 
-        advance: i64 = ((rate as i64) * EQOI_ANIM_FIXED * self.frame_delta_us) / 1000000
+        advance: i64 = ((rate as i64) * SOORYN_ANIM_FIXED * self.frame_delta_us) / 1000000
         if advance < 1:
             advance = 1
         if current_fp < target_fp:
@@ -191,7 +191,7 @@ attach EqoiApp:
         Memory.write_i32(self.anim_values + (slot as i64) * 4, current_fp as i32)
         if current_fp != target_fp:
             self.anim_active = self.anim_active + 1
-        return (current_fp / EQOI_ANIM_FIXED) as i32
+        return (current_fp / SOORYN_ANIM_FIXED) as i32
 
     # Convenience: the 0..100 blend a hover state wants.
     fun anim_hover(self, id: i64, hovered: i32) -> i32:

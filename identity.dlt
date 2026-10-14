@@ -1,5 +1,5 @@
 # ============================
-#  Eqoi Widget Identity
+#  Sooryn Widget Identity
 # ============================
 # Widget state that outlives a frame — focus, drag ownership, hover age, and
 # whether a dropdown is open — is keyed by an identity hash. With nothing
@@ -32,9 +32,9 @@
 #
 # Callers that push nothing keep the previous behaviour exactly.
 
-EQOI_ID_STACK_INITIAL: i32 = 16
+SOORYN_ID_STACK_INITIAL: i32 = 16
 
-attach EqoiApp:
+attach SoorynApp:
     # FNV-1a. Same basis and prime as widget_id, so pushed and unpushed
     # identities live in one hash space.
     fun mix_id(self, seed: i64, value: i64) -> i64:
@@ -72,15 +72,15 @@ attach EqoiApp:
 
     fun _grow_id_stack(self) -> i32:
         if self.id_stack == 0:
-            self.id_stack = Memory.malloc_zeroed((EQOI_ID_STACK_INITIAL as i64) * 8)
+            self.id_stack = Memory.malloc_zeroed((SOORYN_ID_STACK_INITIAL as i64) * 8)
             if self.id_stack == 0:
                 return 0
-            self.id_seqs = Memory.malloc_zeroed((EQOI_ID_STACK_INITIAL as i64) * 4)
+            self.id_seqs = Memory.malloc_zeroed((SOORYN_ID_STACK_INITIAL as i64) * 4)
             if self.id_seqs == 0:
                 Memory.free(self.id_stack)
                 self.id_stack = 0
                 return 0
-            self.id_capacity = EQOI_ID_STACK_INITIAL
+            self.id_capacity = SOORYN_ID_STACK_INITIAL
             return 1
         if self.id_depth < self.id_capacity:
             return 1

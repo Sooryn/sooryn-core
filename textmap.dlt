@@ -1,5 +1,5 @@
 # ============================
-#  Eqoi Logical-to-Visual Text Mapping
+#  Sooryn Logical-to-Visual Text Mapping
 # ============================
 # A caret lives at a position in the text as stored. It has to be drawn
 # somewhere in the text as shown. Between the two sit shaping, which can turn
@@ -22,13 +22,13 @@
 # glyph, the right side of a right-to-left one. That single rule is what makes
 # a caret behave in mixed text.
 
-EQOI_TEXTMAP_CAPACITY: i32 = 256
+SOORYN_TEXTMAP_CAPACITY: i32 = 256
 
-attach EqoiApp:
+attach SoorynApp:
     fun _textmap_reserve(self) -> i32:
         if self.tm_source != 0:
             return 1
-        span: i64 = (EQOI_TEXTMAP_CAPACITY as i64) * 4
+        span: i64 = (SOORYN_TEXTMAP_CAPACITY as i64) * 4
         self.tm_source = Memory.malloc_zeroed(span)
         self.tm_display = Memory.malloc_zeroed(span)
         self.tm_sources = Memory.malloc_zeroed(span)
@@ -44,7 +44,7 @@ attach EqoiApp:
     fun text_map_build(self, buf: i64, max_len: i32) -> i32:
         if self._textmap_reserve() == 0:
             return 0
-        self.tm_count = utf8_decode_all(buf as str, self.tm_source, EQOI_TEXTMAP_CAPACITY)
+        self.tm_count = utf8_decode_all(buf as str, self.tm_source, SOORYN_TEXTMAP_CAPACITY)
         if self.tm_count <= 0:
             self.tm_count = 0
             self.tm_display_count = 0
@@ -53,7 +53,7 @@ attach EqoiApp:
                 self.tm_para = 1
             return 1
         self.tm_para = bidi_paragraph_level(self.tm_source, self.tm_count)
-        self.tm_display_count = text_display_detail(self.tm_source, self.tm_count, self.tm_display, self.tm_sources, self.tm_levels, EQOI_TEXTMAP_CAPACITY, self.tm_scratch)
+        self.tm_display_count = text_display_detail(self.tm_source, self.tm_count, self.tm_display, self.tm_sources, self.tm_levels, SOORYN_TEXTMAP_CAPACITY, self.tm_scratch)
         if self.tm_display_count < 0:
             self.tm_display_count = 0
             return 0

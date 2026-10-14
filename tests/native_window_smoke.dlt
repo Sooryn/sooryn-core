@@ -1,7 +1,7 @@
-import eqoi
+import sooryn
 
 fun main() -> i32:
-    app: EqoiApp = EqoiApp.create("Eqoi native smoke", 320, 180)
+    app: SoorynApp = SoorynApp.create("Sooryn native smoke", 320, 180)
     if app.is_valid() == 0:
         return 1
 
@@ -11,7 +11,7 @@ fun main() -> i32:
             app.destroy()
             return 2
         app.panel(12, 12, 296, 156)
-        app.title(28, 34, "Eqoi")
+        app.title(28, 34, "Sooryn")
         app.label(28, 72, "Native surface presentation")
         app.button(28, 108, 156, 36, "Ready")
         app.end()

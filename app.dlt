@@ -1,5 +1,5 @@
 # ============================
-#  Eqoi App
+#  Sooryn App
 # ============================
 # High-level app framework — owns the window + event pump, runs the
 # frame loop, delegates drawing to ui via draw_begin/canvas.end.
@@ -8,7 +8,7 @@
 # modal) so the widgets in widgets.dlt have somewhere to store their
 # per-frame state.
 
-struct EqoiApp:
+struct SoorynApp:
     window_handle: i64 = 0
     window_hinstance: i64 = 0
     window_should_close: i32 = 0
@@ -22,7 +22,7 @@ struct EqoiApp:
     surface: UISurface = UISurface()
     commands: UIDrawList = UIDrawList()
     input_state: UIInputState = UIInputState()
-    theme: EqoiTheme = EqoiTheme()
+    theme: SoorynTheme = SoorynTheme()
 
     # ---- Widget-identity tracking ----
     hover_id: i64 = 0
@@ -43,7 +43,7 @@ struct EqoiApp:
     # Set once for the application. Layouts the app hands out carry it, and
     # widgets that have a side — a checkbox box, a scrollbar, a chevron —
     # mirror themselves.
-    direction: i32 = EQOI_DIR_LTR
+    direction: i32 = SOORYN_DIR_LTR
 
     # ---- Identity stack (see identity.dlt) ----
     id_stack: i64 = 0
@@ -223,9 +223,9 @@ struct EqoiApp:
     in_home: i32 = 0
     in_end: i32 = 0
 
-attach EqoiApp:
-    static fun create(title: str, width: i32, height: i32) -> EqoiApp:
-        app: EqoiApp = EqoiApp()
+attach SoorynApp:
+    static fun create(title: str, width: i32, height: i32) -> SoorynApp:
+        app: SoorynApp = SoorynApp()
         app.use_dark_theme()
 
         if Window.open(title, width, height) == 0:
@@ -265,8 +265,8 @@ attach EqoiApp:
 
     # Offscreen twin of create(). Same surface, same command list, same frame
     # loop — no window, no event pump, no presentation.
-    static fun headless(width: i32, height: i32) -> EqoiApp:
-        app: EqoiApp = EqoiApp()
+    static fun headless(width: i32, height: i32) -> SoorynApp:
+        app: SoorynApp = SoorynApp()
         app.use_dark_theme()
 
         if width <= 0 or height <= 0:
@@ -298,15 +298,15 @@ attach EqoiApp:
         return app
 
     fun use_dark_theme(self):
-        self.theme = EqoiTheme.dark()
+        self.theme = SoorynTheme.dark()
 
     fun use_light_theme(self):
-        self.theme = EqoiTheme.light()
+        self.theme = SoorynTheme.light()
 
     # Borrow a caller-owned face. Keep it alive until the app is destroyed or
     # another face is selected. Rendering remains owned by ui.
     fun use_font(self, face: FontFace) -> i32:
-        # The application owns this one, so Eqoi stops rebuilding a default
+        # The application owns this one, so Sooryn stops rebuilding a default
         # at every scale change. Size it with font_pixels.
         self.uses_default_font = 0
         return self.surface.use_font_face(face)
@@ -551,7 +551,7 @@ attach EqoiApp:
         ra: i32 = (aa * (100 - t) + ba * t) / 100
         return (rb & 255) | ((rg & 255) << 8) | ((rr & 255) << 16) | ((ra & 255) << 24)
 
-    fun set_theme(self, theme: EqoiTheme):
+    fun set_theme(self, theme: SoorynTheme):
         self.theme = theme
 
     # ================================================================
@@ -636,5 +636,5 @@ attach EqoiApp:
     fun pop_clip(self):
         self.commands.pop_clip()
 
-fun eqoi_app_create(title: str, width: i32, height: i32) -> EqoiApp:
-    return EqoiApp.create(title, width, height)
+fun sooryn_app_create(title: str, width: i32, height: i32) -> SoorynApp:
+    return SoorynApp.create(title, width, height)

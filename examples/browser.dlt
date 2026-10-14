@@ -1,4 +1,4 @@
-import eqoi
+import sooryn
 
 # A browser's furniture, and nothing behind it.
 #
@@ -19,8 +19,8 @@ CONTROL_W: i32 = 46
 MAX_TABS: i32 = 14
 FONT_PATH: str = "assets/fonts/Inter-Regular.ttf"
 
-fun browser_theme() -> EqoiTheme:
-    theme: EqoiTheme = EqoiTheme.dark()
+fun browser_theme() -> SoorynTheme:
+    theme: SoorynTheme = SoorynTheme.dark()
     theme.background     = ui_rgb(10, 10, 10)
     theme.surface        = ui_rgb(42, 42, 48)
     theme.surface_hover  = ui_rgb(58, 58, 65)
@@ -68,7 +68,7 @@ fun demo_favicon(slot: i32) -> UIColor:
     return ui_rgb(230, 33, 23)
 
 fun main() -> i32:
-    app: EqoiApp = EqoiApp.create("Eqoi Browser Shell", 1500, 780)
+    app: SoorynApp = SoorynApp.create("Sooryn Browser Shell", 1500, 780)
     if app.is_valid() == 0:
         return 1
     app.set_theme(browser_theme())
@@ -97,7 +97,7 @@ fun main() -> i32:
     next_slot: i32 = 10
 
     active: i64 = app.alloc_int(0)
-    url: EqoiText = app.new_text(220)
+    url: SoorynText = app.new_text(220)
     url.set("https://www.youtube.com/watch?v=zomVPu6qWOY")
 
     while app.running() == 1:
@@ -121,9 +121,9 @@ fun main() -> i32:
 
             # Window controls, sharing the strip with the tabs.
             wx: i32 = width - controls_w
-            app.window_button(wx, 0, CONTROL_W, STRIP_H, EQOI_ICON_MINIMIZE, 0)
-            app.window_button(wx + CONTROL_W, 0, CONTROL_W, STRIP_H, EQOI_ICON_MAXIMIZE, 0)
-            if app.window_button(wx + CONTROL_W * 2, 0, CONTROL_W, STRIP_H, EQOI_ICON_CLOSE, 1) == 1:
+            app.window_button(wx, 0, CONTROL_W, STRIP_H, SOORYN_ICON_MINIMIZE, 0)
+            app.window_button(wx + CONTROL_W, 0, CONTROL_W, STRIP_H, SOORYN_ICON_MAXIMIZE, 0)
+            if app.window_button(wx + CONTROL_W * 2, 0, CONTROL_W, STRIP_H, SOORYN_ICON_CLOSE, 1) == 1:
                 app.quit()
 
             # ---------------- the page, deliberately empty ----------------
@@ -136,7 +136,7 @@ fun main() -> i32:
             app.gradient(0, height - BOTTOM_H - 3, width, 3, 0, ui_rgba(0, 0, 0, 0), ui_rgba(0, 0, 0, 70), 1)
             hint: str = "The page goes here."
             app.muted_label((width - app.text_width(hint)) / 2, STRIP_H + page_h / 2 - 20, hint)
-            note: str = "Everything around it is Eqoi, and every icon is drawn rather than loaded."
+            note: str = "Everything around it is Sooryn, and every icon is drawn rather than loaded."
             app.muted_label((width - app.text_width(note)) / 2, STRIP_H + page_h / 2 + 4, note)
             if loaded == 0:
                 missing: str = "Inter was not found beside the program; this is the built-in face."
@@ -149,13 +149,13 @@ fun main() -> i32:
             size: i32 = 30
             iy: i32 = bar_y + (BOTTOM_H - size) / 2
             x: i32 = 8
-            app.icon_button(x, iy, size, EQOI_ICON_ARROW_LEFT)
+            app.icon_button(x, iy, size, SOORYN_ICON_ARROW_LEFT)
             x = x + size + 2
-            app.icon_button(x, iy, size, EQOI_ICON_ARROW_RIGHT)
+            app.icon_button(x, iy, size, SOORYN_ICON_ARROW_RIGHT)
             x = x + size + 2
-            app.icon_button(x, iy, size, EQOI_ICON_RELOAD)
+            app.icon_button(x, iy, size, SOORYN_ICON_RELOAD)
             x = x + size + 2
-            app.icon_button(x, iy, size, EQOI_ICON_HOME)
+            app.icon_button(x, iy, size, SOORYN_ICON_HOME)
             x = x + size + 10
 
             right: i32 = width - 8
@@ -167,18 +167,18 @@ fun main() -> i32:
             # Raised a little off the bar, which is what an address bar is:
             # the one thing on the toolbar you are meant to type into.
             app.elevation(field_x, field_y, field_w, field_h, field_h / 2, 2)
-            app.omnibox(field_x, field_y, field_w, field_h, url.ptr, 219, EQOI_ICON_LOCK)
+            app.omnibox(field_x, field_y, field_w, field_h, url.ptr, 219, SOORYN_ICON_LOCK)
 
             tx: i32 = right - trailing
-            app.icon_button(tx, iy, size, EQOI_ICON_SHIELD)
+            app.icon_button(tx, iy, size, SOORYN_ICON_SHIELD)
             tx = tx + size + 2
-            app.icon_button(tx, iy, size, EQOI_ICON_STAR)
+            app.icon_button(tx, iy, size, SOORYN_ICON_STAR)
             tx = tx + size + 2
-            app.icon_button(tx, iy, size, EQOI_ICON_DOWNLOAD)
+            app.icon_button(tx, iy, size, SOORYN_ICON_DOWNLOAD)
             tx = tx + size + 2
-            app.icon_button(tx, iy, size, EQOI_ICON_USER)
+            app.icon_button(tx, iy, size, SOORYN_ICON_USER)
             tx = tx + size + 2
-            app.icon_button(tx, iy, size, EQOI_ICON_MENU)
+            app.icon_button(tx, iy, size, SOORYN_ICON_MENU)
 
             app.end()
 

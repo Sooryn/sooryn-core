@@ -1,4 +1,4 @@
-import eqoi
+import sooryn
 
 # Right-to-left. A mirrored interface is not right-aligned text: rows fill
 # from the right, a checkbox puts its box on the right, a slider fills from
@@ -9,43 +9,43 @@ import eqoi
 #     mirrored_left = layout.x + layout.width - (rect.right - layout.x)
 
 fun main() -> i32:
-    app: EqoiApp = EqoiApp.headless(600, 400)
+    app: SoorynApp = SoorynApp.headless(600, 400)
     if app.is_valid() == 0:
-        print("eqoi rtl: headless app creation failed")
+        print("sooryn rtl: headless app creation failed")
         return 1
 
     # ---------------------------------------------------------------
     # Left to right is the default and is untouched.
     # ---------------------------------------------------------------
     if app.is_rtl() != 0:
-        print("eqoi rtl: a fresh app is not left to right")
+        print("sooryn rtl: a fresh app is not left to right")
         app.destroy()
         return 2
-    ltr: EqoiLayout = app.row(0, 0, 300, 100, 10, 10)
+    ltr: SoorynLayout = app.row(0, 0, 300, 100, 10, 10)
     first_ltr: UIRect = ltr.next(50, 0)
     if first_ltr.left != 10 or first_ltr.right != 60:
-        print("eqoi rtl: the left-to-right row moved")
+        print("sooryn rtl: the left-to-right row moved")
         app.destroy()
         return 3
 
     app.use_rtl()
     if app.is_rtl() != 1:
-        print("eqoi rtl: the app did not switch direction")
+        print("sooryn rtl: the app did not switch direction")
         app.destroy()
         return 4
 
     # ---------------------------------------------------------------
     # A row fills from the right, flowing leftwards.
     # ---------------------------------------------------------------
-    r: EqoiLayout = app.row(0, 0, 300, 100, 10, 10)
+    r: SoorynLayout = app.row(0, 0, 300, 100, 10, 10)
     a: UIRect = r.next(50, 0)
     b: UIRect = r.next(50, 0)
     if a.left != 240 or a.right != 290:
-        print("eqoi rtl: the first item is not against the right edge")
+        print("sooryn rtl: the first item is not against the right edge")
         app.destroy()
         return 5
     if b.left != 180 or b.right != 230:
-        print("eqoi rtl: the row did not flow leftwards")
+        print("sooryn rtl: the row did not flow leftwards")
         app.destroy()
         return 6
 
@@ -53,38 +53,38 @@ fun main() -> i32:
     # In a column a narrow item sits against the right edge, and one that
     # fills the width is unchanged by mirroring.
     # ---------------------------------------------------------------
-    c: EqoiLayout = app.column(0, 0, 200, 300, 10, 5)
+    c: SoorynLayout = app.column(0, 0, 200, 300, 10, 5)
     narrow: UIRect = c.next(50, 20)
     wide: UIRect = c.next(0, 20)
     if narrow.left != 140 or narrow.right != 190:
-        print("eqoi rtl: a narrow column item is not against the right edge")
+        print("sooryn rtl: a narrow column item is not against the right edge")
         app.destroy()
         return 7
     if wide.left != 10 or wide.right != 190:
-        print("eqoi rtl: a full-width item was moved by mirroring")
+        print("sooryn rtl: a full-width item was moved by mirroring")
         app.destroy()
         return 8
 
     # ---------------------------------------------------------------
     # A grid flows right to left.
     # ---------------------------------------------------------------
-    g: EqoiLayout = app.grid(0, 0, 320, 240, 10, 10, 3)
+    g: SoorynLayout = app.grid(0, 0, 320, 240, 10, 10, 3)
     cell0: UIRect = g.next_cell(30)
     cell1: UIRect = g.next_cell(30)
     if cell0.left != 217 or cell0.right != 310:
-        print("eqoi rtl: the first grid cell is not on the right")
+        print("sooryn rtl: the first grid cell is not on the right")
         app.destroy()
         return 9
     if cell1.left != 114:
-        print("eqoi rtl: the grid did not flow leftwards")
+        print("sooryn rtl: the grid did not flow leftwards")
         app.destroy()
         return 10
 
     # A layout built with the bare constructor stays left to right, so the
     # direction travels with the application rather than leaking globally.
-    plain: EqoiLayout = EqoiLayout.row(0, 0, 300, 100, 10, 10)
+    plain: SoorynLayout = SoorynLayout.row(0, 0, 300, 100, 10, 10)
     if plain.next(50, 0).left != 10:
-        print("eqoi rtl: direction leaked into a standalone layout")
+        print("sooryn rtl: direction leaked into a standalone layout")
         app.destroy()
         return 11
 
@@ -103,7 +103,7 @@ fun main() -> i32:
         app.checkbox(40, 100, label, checked)
         app.end()
     if app.get_bool(checked) != 0:
-        print("eqoi rtl: the checkbox box is still on the left")
+        print("sooryn rtl: the checkbox box is still on the left")
         app.destroy()
         return 12
     app.inject_left_up()
@@ -118,7 +118,7 @@ fun main() -> i32:
         app.checkbox(40, 100, label, checked)
         app.end()
     if app.get_bool(checked) != 1:
-        print("eqoi rtl: the checkbox box is not on the right")
+        print("sooryn rtl: the checkbox box is not on the right")
         app.destroy()
         return 13
     app.inject_left_up()
@@ -138,7 +138,7 @@ fun main() -> i32:
         app.slider(100, 200, 200, 0, 100, volume)
         app.end()
     if app.get_int(volume) != 0:
-        print("eqoi rtl: the right end of the slider is not the minimum")
+        print("sooryn rtl: the right end of the slider is not the minimum")
         app.destroy()
         return 14
 
@@ -147,7 +147,7 @@ fun main() -> i32:
         app.slider(100, 200, 200, 0, 100, volume)
         app.end()
     if app.get_int(volume) != 100:
-        print("eqoi rtl: the left end of the slider is not the maximum")
+        print("sooryn rtl: the left end of the slider is not the maximum")
         app.destroy()
         return 15
     app.inject_left_up()
@@ -168,7 +168,7 @@ fun main() -> i32:
         app.tab_bar_end()
         app.end()
     if app.get_int(active) != 1:
-        print("eqoi rtl: the middle tab is not in the middle")
+        print("sooryn rtl: the middle tab is not in the middle")
         app.destroy()
         return 16
     app.inject_left_up()
@@ -186,7 +186,7 @@ fun main() -> i32:
         app.tab_bar_end()
         app.end()
     if app.get_int(active) != 0:
-        print("eqoi rtl: the first tab is not on the right")
+        print("sooryn rtl: the first tab is not on the right")
         app.destroy()
         return 17
     app.inject_left_up()
@@ -213,7 +213,7 @@ fun main() -> i32:
         app.table_end()
         app.end()
     if sorted_by != 0:
-        print("eqoi rtl: the first table column is not on the right")
+        print("sooryn rtl: the first table column is not on the right")
         app.destroy()
         return 18
     app.inject_left_up()
@@ -222,12 +222,12 @@ fun main() -> i32:
     # Switching back restores left-to-right behaviour exactly.
     # ---------------------------------------------------------------
     app.use_ltr()
-    back: EqoiLayout = app.row(0, 0, 300, 100, 10, 10)
+    back: SoorynLayout = app.row(0, 0, 300, 100, 10, 10)
     if back.next(50, 0).left != 10:
-        print("eqoi rtl: switching back did not restore the direction")
+        print("sooryn rtl: switching back did not restore the direction")
         app.destroy()
         return 19
 
     app.destroy()
-    print("eqoi rtl: ok")
+    print("sooryn rtl: ok")
     return 0

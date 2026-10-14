@@ -1,5 +1,5 @@
 # ============================
-#  Eqoi Text Editing
+#  Sooryn Text Editing
 # ============================
 # A caret and a selection for single-line text input.
 #
@@ -17,7 +17,7 @@
 # arriving, these become grapheme offsets and every caller keeps working
 # because none of them index the buffer themselves.
 
-attach EqoiApp:
+attach SoorynApp:
     # Length of the NUL-terminated buffer, bounded by max_len.
     fun text_length(self, buf: i64, max_len: i32) -> i32:
         n: i32 = 0

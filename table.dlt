@@ -1,5 +1,5 @@
 # ============================
-#  Eqoi Table
+#  Sooryn Table
 # ============================
 # A virtualized data table. The application never hands over its data: it is
 # told which rows are on screen and fills only those, so a million rows cost
@@ -22,15 +22,15 @@
 # application's job: table_column returns 1 when its header was clicked, and
 # what that means is for the caller to decide.
 
-EQOI_TABLE_COL_CHUNK: i32 = 8
+SOORYN_TABLE_COL_CHUNK: i32 = 8
 
-attach EqoiApp:
+attach SoorynApp:
     fun _table_reserve_columns(self, needed: i32) -> i32:
         if needed <= self.tb_col_capacity:
             return 1
         next_capacity: i32 = self.tb_col_capacity
-        if next_capacity < EQOI_TABLE_COL_CHUNK:
-            next_capacity = EQOI_TABLE_COL_CHUNK
+        if next_capacity < SOORYN_TABLE_COL_CHUNK:
+            next_capacity = SOORYN_TABLE_COL_CHUNK
         while next_capacity < needed:
             next_capacity = next_capacity * 2
         if self.tb_col_widths == 0:

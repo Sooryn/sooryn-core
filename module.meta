@@ -1,9 +1,9 @@
-# Eqoi Module Metadata
+# Sooryn Module Metadata
 # High-level native app framework for Dolet.
 # Owns the window + event pump; widgets on top of ui.
 
 [info]
-name = eqoi
+name = sooryn
 version = 0.26.0
 layer = composition
 no-bindings = true

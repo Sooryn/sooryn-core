@@ -1,5 +1,5 @@
 # ============================
-#  Eqoi Headless Mode
+#  Sooryn Headless Mode
 # ============================
 # The offscreen half of the frame loop. A headless app renders into its own
 # surface and takes input from these inject_* helpers instead of the OS, so
@@ -16,7 +16,7 @@
 # A click is therefore two frames, not one — down, then up — because that is
 # what it is in an immediate-mode loop.
 
-attach EqoiApp:
+attach SoorynApp:
     # Headless twin of begin(). No wait, no event pump, no window sync: the
     # surface size only changes when a test calls resize_offscreen().
     fun begin_offscreen(self) -> i32:
@@ -192,5 +192,5 @@ attach EqoiApp:
         offset: i64 = (y as i64) * (self.surface.pitch as i64) + (x as i64) * 4
         return Memory.read_i32(self.surface.pixels + offset)
 
-fun eqoi_app_headless(width: i32, height: i32) -> EqoiApp:
-    return EqoiApp.headless(width, height)
+fun sooryn_app_headless(width: i32, height: i32) -> SoorynApp:
+    return SoorynApp.headless(width, height)

@@ -1,4 +1,4 @@
-import eqoi
+import sooryn
 
 # Shadows and gradients.
 #
@@ -12,9 +12,9 @@ fun luminance(color: UIColor) -> i32:
     return ((color & 255) + ((color >> 8) & 255) + ((color >> 16) & 255)) / 3
 
 fun main() -> i32:
-    app: EqoiApp = EqoiApp.headless(300, 200)
+    app: SoorynApp = SoorynApp.headless(300, 200)
     if app.is_valid() == 0:
-        print("eqoi depth: headless app creation failed")
+        print("sooryn depth: headless app creation failed")
         return 1
     app.inject_mouse_move(290, 190)
 
@@ -34,19 +34,19 @@ fun main() -> i32:
     ground: i32 = luminance(app.theme.background)
 
     if under <= ground + 40:
-        print("eqoi depth: the shadow is not solid under its own box")
+        print("sooryn depth: the shadow is not solid under its own box")
         app.destroy()
         return 2
     if near <= far:
-        print("eqoi depth: the shadow does not thin with distance")
+        print("sooryn depth: the shadow does not thin with distance")
         app.destroy()
         return 3
     if far <= beyond:
-        print("eqoi depth: the shadow does not keep thinning")
+        print("sooryn depth: the shadow does not keep thinning")
         app.destroy()
         return 4
     if beyond > ground + 6:
-        print("eqoi depth: the shadow reaches past its blur")
+        print("sooryn depth: the shadow reaches past its blur")
         app.destroy()
         return 5
 
@@ -57,7 +57,7 @@ fun main() -> i32:
     corner: i32 = luminance(app.pixel_at(100, 60))
     side: i32 = luminance(app.pixel_at(150, 60))
     if corner >= side:
-        print("eqoi depth: the shadow squared off its corners")
+        print("sooryn depth: the shadow squared off its corners")
         app.destroy()
         return 6
 
@@ -75,7 +75,7 @@ fun main() -> i32:
     while x < 219:
         here = luminance(app.pixel_at(x, 40))
         if here < previous:
-            print("eqoi depth: the ramp went backwards")
+            print("sooryn depth: the ramp went backwards")
             app.destroy()
             return 7
         previous = here
@@ -85,7 +85,7 @@ fun main() -> i32:
     # where sRGB puts half the light. Mixed in code it would sit at 128.
     middle: i32 = luminance(app.pixel_at(120, 40))
     if middle < 180 or middle > 196:
-        print("eqoi depth: the ramp was mixed in code rather than in light")
+        print("sooryn depth: the ramp was mixed in code rather than in light")
         app.destroy()
         return 8
 
@@ -95,14 +95,14 @@ fun main() -> i32:
         app.gradient(20, 100, 120, 60, 14, ui_rgb(255, 255, 255), ui_rgb(255, 255, 255), 1)
         app.end()
     if luminance(app.pixel_at(20, 100)) > ground + 20:
-        print("eqoi depth: the rounded gradient filled its corner")
+        print("sooryn depth: the rounded gradient filled its corner")
         app.destroy()
         return 9
     if luminance(app.pixel_at(80, 100)) < 200:
-        print("eqoi depth: the rounded gradient did not fill its edge")
+        print("sooryn depth: the rounded gradient did not fill its edge")
         app.destroy()
         return 10
 
     app.destroy()
-    print("eqoi depth: ok")
+    print("sooryn depth: ok")
     return 0

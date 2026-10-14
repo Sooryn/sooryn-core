@@ -1,17 +1,17 @@
 # ============================
-#  Eqoi Controls
+#  Sooryn Controls
 # ============================
 # The widgets an application reaches for once the basics are in place: a
 # choice between a few options, a number you nudge, a hierarchy you open and
 # close, a menu you summon, and a message that appears and leaves on its own.
 #
-# All of them follow the shape the rest of Eqoi uses: state lives in a value
+# All of them follow the shape the rest of Sooryn uses: state lives in a value
 # the caller owns, the widget returns whether it changed this frame, and the
 # widget mirrors itself when the reading direction turns over.
 
-EQOI_TOAST_MAX: i32 = 4
+SOORYN_TOAST_MAX: i32 = 4
 
-attach EqoiApp:
+attach SoorynApp:
     # ---------------------------------------------------------------
     # Radio group
     # ---------------------------------------------------------------
@@ -285,15 +285,15 @@ attach EqoiApp:
     # Toasts
     # ---------------------------------------------------------------
     # A message that appears, waits, and leaves. The application posts one and
-    # forgets it; Eqoi keeps the few that are showing and expires them on the
+    # forgets it; Sooryn keeps the few that are showing and expires them on the
     # frame clock, so a toast does not depend on the application remembering
     # to take it down.
     fun toast(self, message: str, milliseconds: i32) -> i32:
-        if self.ts_count >= EQOI_TOAST_MAX:
+        if self.ts_count >= SOORYN_TOAST_MAX:
             return 0
         if self.ts_text == 0:
-            self.ts_text = Memory.malloc_zeroed((EQOI_TOAST_MAX as i64) * 128)
-            self.ts_left = Memory.malloc_zeroed((EQOI_TOAST_MAX as i64) * 4)
+            self.ts_text = Memory.malloc_zeroed((SOORYN_TOAST_MAX as i64) * 128)
+            self.ts_left = Memory.malloc_zeroed((SOORYN_TOAST_MAX as i64) * 4)
             if self.ts_text == 0 or self.ts_left == 0:
                 return 0
         slot: i64 = self.ts_text + (self.ts_count as i64) * 128

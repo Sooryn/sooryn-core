@@ -1,19 +1,19 @@
-# Eqoi
+# Sooryn
 
-Eqoi is the native application framework for Dolet. It owns the application
+Sooryn is the native application framework for Dolet. It owns the application
 window and event loop, translates native input into `ui` snapshots, manages the
 software surface, and provides themes, layouts, widgets, clipping, and managed
 widget state.
 
 On Linux the public API is display-server neutral. The shared `window` adapter
 uses native Wayland/xdg-shell when available and falls back to X11/XWayland;
-Eqoi does not contain display-server-specific rendering or input code.
+Sooryn does not contain display-server-specific rendering or input code.
 
 Current version: **0.23.0**
 
 ```text
-Eqoi application
-  -> Eqoi lifecycle, layout, widgets, theme, state
+Sooryn application
+  -> Sooryn lifecycle, layout, widgets, theme, state
   -> ui commands, input snapshots, software surface
   -> window/input native adapters
   -> operating system
@@ -22,19 +22,19 @@ Eqoi application
 ## Quick start
 
 ```dolet
-import eqoi
+import sooryn
 
-app: EqoiApp = EqoiApp.create("Hello Eqoi", 800, 600)
+app: SoorynApp = SoorynApp.create("Hello Sooryn", 800, 600)
 if app.is_valid() == 1:
     count: i64 = app.alloc_int(0)
 
     while app.running():
         if app.begin() == 1:
-            layout: EqoiLayout = EqoiLayout.column(24, 24, app.width - 48, app.height - 48, 16, 12)
+            layout: SoorynLayout = SoorynLayout.column(24, 24, app.width - 48, app.height - 48, 16, 12)
             title_rect: UIRect = layout.next(0, 32)
             button_rect: UIRect = layout.next(180, 44)
 
-            app.title(title_rect.left, title_rect.top, "Eqoi")
+            app.title(title_rect.left, title_rect.top, "Sooryn")
             if app.button(button_rect.left, button_rect.top, 180, 44, "Click") == 1:
                 app.set_int(count, app.get_int(count) + 1)
 
@@ -45,7 +45,7 @@ if app.is_valid() == 1:
 
 ## Layout
 
-`EqoiLayout.column(...)` and `EqoiLayout.row(...)` produce bounded `UIRect`
+`SoorynLayout.column(...)` and `SoorynLayout.row(...)` produce bounded `UIRect`
 values. A non-positive cross-axis size fills the inner area; a non-positive
 main-axis size consumes the remaining area. Layout only computes geometry, so it
 can be tested without opening a window.
@@ -62,14 +62,14 @@ reserves the gaps between its items, so equal weights come out equal and the
 run ends exactly on the far edge. `flex_even(n)` is the equal-share shorthand.
 
 ```dolet
-bar: EqoiLayout = EqoiLayout.row(0, 0, 300, 100, 10, 10)
+bar: SoorynLayout = SoorynLayout.row(0, 0, 300, 100, 10, 10)
 bar.flex(3, 2)
 narrow: UIRect = bar.next_flex(1)      # one third
 wide: UIRect = bar.next_flex(2)        # two thirds
 ```
 
 **Alignment.** `align(mode)` places items that give an explicit cross size:
-`EQOI_ALIGN_START` (the default, and the original behaviour), `CENTER`, `END`,
+`SOORYN_ALIGN_START` (the default, and the original behaviour), `CENTER`, `END`,
 or `STRETCH` to ignore the requested size and fill. `align_main(mode, extent)`
 shifts the starting cursor so a known amount of content sits centred or
 end-aligned along the main axis.
@@ -82,7 +82,7 @@ slot. `limits(min, max)` clamps each item's main-axis size, with a maximum of
 item does not fit. The item that did not fit starts the new line at its full
 size rather than being squeezed into what was left.
 
-**Grids.** `EqoiLayout.grid(x, y, w, h, padding, gap, columns)` flows cells
+**Grids.** `SoorynLayout.grid(x, y, w, h, padding, gap, columns)` flows cells
 across and then down. `next_cell(height)` takes one cell and
 `next_cell_span(span, height)` takes several; a span that would overflow the
 row starts a new one.
@@ -92,7 +92,7 @@ child layout inside a rectangle a parent produced.
 
 ```dolet
 slot: UIRect = page.next(0, 100)
-panel: EqoiLayout = EqoiLayout.column_in(slot, 5, 5)
+panel: SoorynLayout = SoorynLayout.column_in(slot, 5, 5)
 ```
 
 **Measuring.** `content_main()` reports the main-axis extent consumed so far
@@ -110,14 +110,14 @@ rectangle.
 - a virtualized data table with columns, selection, and sorting hooks
 - radio groups, number spinners, tree rows, context menus, and toasts
 
-All widget text measurement comes from the active `ui` surface FontFace. Eqoi
+All widget text measurement comes from the active `ui` surface FontFace. Sooryn
 does not hard-code glyph dimensions, so centering, carets, tabs, dropdowns, and
 tooltips remain correct when the font face or pixel size changes. Coverage-font
-text and anti-aliased primitives are rasterized by `ui`; Eqoi stays focused on
+text and anti-aliased primitives are rasterized by `ui`; Sooryn stays focused on
 native application behavior and component composition.
 
 An application may create a face with the independent `fonts` package and pass
-it to `app.use_font(face)`. Eqoi borrows the atlas, so the application keeps the
+it to `app.use_font(face)`. Sooryn borrows the atlas, so the application keeps the
 face alive and destroys it after `app.destroy()`; switching faces does not copy
 glyph pixels or add per-frame rasterization.
 
@@ -140,14 +140,14 @@ dropped at a fixed capacity.
 
 ## Images
 
-Eqoi draws a pixel buffer; it does not decode one. Decoding belongs to the
+Sooryn draws a pixel buffer; it does not decode one. Decoding belongs to the
 `image` package, which reads PNG and JPEG in pure Dolet, and keeping the two
 apart means an application that draws no images carries no decoder — exactly
 as one that loads no font carries no TrueType parser.
 
 ```dolet
 picture: Image = PNG.load("logo.png")
-logo: EqoiImage = app.new_image_rgba(picture.data, picture.width,
+logo: SoorynImage = app.new_image_rgba(picture.data, picture.width,
                                      picture.height, picture.stride)
 app.image(x, y, logo)
 ```
@@ -176,9 +176,9 @@ handed to a slider or a length being passed as a value.
 Handles are the same pointers with a type on them.
 
 ```dolet
-enabled: EqoiBool = app.new_bool(1)
-volume:  EqoiInt  = app.new_int(64)
-name:    EqoiText = app.new_text(64)
+enabled: SoorynBool = app.new_bool(1)
+volume:  SoorynInt  = app.new_int(64)
+name:    SoorynText = app.new_text(64)
 
 app.checkbox(x, y, "Enable", enabled)
 app.slider(x, y, 200, 0, 100, volume)
@@ -203,20 +203,20 @@ against the old shape has to change, and the two can be mixed in one frame.
 released by `app.destroy()`. The pointer registry grows as required, so an
 application is not limited to a fixed widget count.
 
-`EqoiTheme` centralizes application colors, spacing, padding, borders, and
-corner radii. `EqoiTheme.dark()` is the built-in default and
-`EqoiTheme.light()` provides the matching light palette.
+`SoorynTheme` centralizes application colors, spacing, padding, borders, and
+corner radii. `SoorynTheme.dark()` is the built-in default and
+`SoorynTheme.light()` provides the matching light palette.
 
 ## Testing without a window
 
-`EqoiApp.headless(width, height)` is the offscreen twin of `EqoiApp.create`. It
+`SoorynApp.headless(width, height)` is the offscreen twin of `SoorynApp.create`. It
 owns the same surface and command list and runs the same frame loop, but opens
 no window, pumps no events, and presents nothing. Input arrives from the
 `inject_*` helpers instead of the operating system, so widget behaviour can be
 driven and asserted on with no display server.
 
 ```dolet
-app: EqoiApp = EqoiApp.headless(400, 300)
+app: SoorynApp = SoorynApp.headless(400, 300)
 
 app.inject_mouse_move(60, 60)
 app.begin_offscreen()
@@ -256,7 +256,7 @@ so Arabic goes through labels, buttons, table cells and text fields the same
 way Latin does. Mixed content orders correctly too: numbers inside an Arabic
 line still read left to right.
 
-Eqoi's built-in face covers ASCII, so drawing Arabic needs a face that has it:
+Sooryn's built-in face covers ASCII, so drawing Arabic needs a face that has it:
 
 ```dolet
 face: FontFace = font_face_load_ttf("assets/fonts/arabic.ttf", 22)
@@ -273,7 +273,7 @@ everything larger. Reconciling those is the whole of display scaling, and
 there are exactly two honest places to do it: where a coordinate becomes a
 pixel, and where a pixel becomes a coordinate.
 
-Eqoi does it at both and nowhere else. Layout, widgets, hit testing and the
+Sooryn does it at both and nowhere else. Layout, widgets, hit testing and the
 whole application work in one set of units and never ask what the display is
 doing — **nothing above `scale.dlt` contains a scale factor.**
 
@@ -289,9 +289,9 @@ face: FontFace = font_face_load_ttf(path, app.font_pixels(16))
   scale factor.
 - A one-pixel border never rounds away to nothing at a fractional scale.
 - The built-in face is rebuilt at the new size. An application that supplied
-  its own face sizes it with `font_pixels`, and Eqoi stops rebuilding.
+  its own face sizes it with `font_pixels`, and Sooryn stops rebuilding.
 
-**Where it comes from.** Windows reports the display's dots per inch and Eqoi
+**Where it comes from.** Windows reports the display's dots per inch and Sooryn
 adopts it before the first frame. The Linux backend does not yet listen for
 the Wayland output scale or read Xft.dpi, so it reports one to one rather
 than guessing — an application there sets the scale outright and everything
@@ -303,16 +303,16 @@ Beyond the basics: `radio` for one of several, `spinner` for a number you
 nudge, `tree_row` for a hierarchy, `menu_*` for a context menu, and `toast`
 for a message that leaves on its own.
 
-They keep the shape the rest of Eqoi uses — state in a value the caller owns,
+They keep the shape the rest of Sooryn uses — state in a value the caller owns,
 a return that says whether it changed, and mirroring when the direction turns
 over — with two decisions worth knowing:
 
 **A tree row is two targets.** It returns 1 when the twisty was hit and 2 when
 the row itself was chosen, because opening a branch and selecting it are
 different intentions and a row that conflates them is annoying to use. The
-application owns the tree and walks it; Eqoi draws a row at a depth.
+application owns the tree and walks it; Sooryn draws a row at a depth.
 
-**A toast is not the application's to remember.** It is posted once and Eqoi
+**A toast is not the application's to remember.** It is posted once and Sooryn
 expires it on the frame clock. A toast on its way out has no OS event behind
 it, so it also keeps the frame loop awake until it is gone, the same way an
 animation does.
@@ -345,11 +345,11 @@ panel, a progress bar — needs nothing, which is most of them.
 Build layouts through the app so nested ones stay consistent:
 
 ```dolet
-page: EqoiLayout = app.column(x, y, w, h, padding, gap)
-row: EqoiLayout = app.row_in(slot, 0, 12)
+page: SoorynLayout = app.column(x, y, w, h, padding, gap)
+row: SoorynLayout = app.row_in(slot, 0, 12)
 ```
 
-`EqoiLayout.column(...)` still builds a left-to-right layout, so the direction
+`SoorynLayout.column(...)` still builds a left-to-right layout, so the direction
 travels with the application rather than leaking globally.
 
 For text that fills a row, the reading edge moves with the direction, so pass
@@ -362,7 +362,7 @@ app.title_in(rect, "العنوان")
 
 Text editing works in right-to-left too. A caret lives at a position in the
 text as stored and has to be drawn somewhere in the text as shown, and after
-shaping and reordering nothing arithmetic connects the two. Eqoi carries the
+shaping and reordering nothing arithmetic connects the two. Sooryn carries the
 correspondence: every drawn glyph remembers the character it came from and the
 direction it runs in.
 
@@ -459,9 +459,9 @@ selection means the hands have left the mouse. Enter does not: it fires the
 focused widget without moving focus, so there is nothing new to point at.
 
 ```dolet
-app.set_focus_ring(EQOI_FOCUS_RING_ALWAYS)   # after a click too
-app.set_focus_ring(EQOI_FOCUS_RING_NEVER)    # never
-app.set_focus_ring(EQOI_FOCUS_RING_KEYBOARD) # the default
+app.set_focus_ring(SOORYN_FOCUS_RING_ALWAYS)   # after a click too
+app.set_focus_ring(SOORYN_FOCUS_RING_NEVER)    # never
+app.set_focus_ring(SOORYN_FOCUS_RING_KEYBOARD) # the default
 ```
 
 The ring follows the widget's own corner: a square checkbox gets square
@@ -476,7 +476,7 @@ app.focus_ring(x, y, width, height)          # the theme's radius
 Thickness, distance and colour are the theme's:
 
 ```dolet
-theme: EqoiTheme = EqoiTheme.dark()
+theme: SoorynTheme = SoorynTheme.dark()
 theme.focus_ring_width = 2      # 1 by default
 theme.focus_ring_offset = 3     # 2 by default, measured outwards
 theme.focus_ring_color = ui_rgb(120, 200, 255)   # 0 falls back to accent_hover
@@ -506,13 +506,13 @@ and `app.delta_us()` is the frame duration, so speed does not change with
 frame rate.
 
 The clock is the platform layer's, available on every target with no import,
-so animation costs Eqoi no new dependency.
+so animation costs Sooryn no new dependency.
 
 **The part that makes it work.** The frame loop blocks on `Window.wait()`,
 which returns only when the operating system has an event — and an animation
 has none. So the loop asks whether anything is still moving and blocks with a
 timeout while it is, then goes fully idle again once everything settles. That
-keeps the property worth having: an Eqoi application costs nothing while it
+keeps the property worth having: an Sooryn application costs nothing while it
 sits on screen.
 
 Offscreen, timing comes from `inject_delta_us` instead of a clock, so
@@ -586,11 +586,11 @@ wheel-sensitive rectangle explicitly.
 ## Boundaries
 
 - `ui` remains pure and platform-neutral.
-- Eqoi owns native application lifecycle and presentation.
+- Sooryn owns native application lifecycle and presentation.
 - `window` and `input` contain operating-system adapters.
-- GPU presentation can be added behind Eqoi without rewriting layout or widgets.
+- GPU presentation can be added behind Sooryn without rewriting layout or widgets.
 
-Windows is verified natively. Linux uses the same Eqoi/UI layers through the
+Windows is verified natively. Linux uses the same Sooryn/UI layers through the
 display-server-neutral `window` API. Native Wayland/xdg-shell is preferred;
 X11/XWayland is the runtime fallback. Both paths use cached software surfaces,
 native keyboard/pointer/text events, and are covered by forced-backend WSLg
@@ -664,10 +664,10 @@ a table of five thousand rows, text editing, and images — and it loads nothing
 from disk and links no decoder, so it builds and runs from a bare checkout.
 
 ```powershell
-doletc examples/gallery.dlt -o examples/eqoi-gallery.exe --target windows/x86_64 --no-console
+doletc examples/gallery.dlt -o examples/sooryn-gallery.exe --target windows/x86_64 --no-console
 ```
 
-`examples/images.dlt` is the other half of the image story, and the only Eqoi
+`examples/images.dlt` is the other half of the image story, and the only Sooryn
 example that touches the disk. It draws a picture with the image package's own
 operations, writes it as a PNG, reads that file back, converts it, and puts
 both copies side by side with a count of how many pixels differ. The count is
@@ -675,7 +675,7 @@ there because a round trip that quietly altered one channel would still look
 right at a glance.
 
 ```powershell
-doletc examples/images.dlt -o examples/eqoi-images.exe --target windows/x86_64 --no-console
+doletc examples/images.dlt -o examples/sooryn-images.exe --target windows/x86_64 --no-console
 ```
 
 `examples/browser.dlt` is a browser's furniture and nothing behind it: a tab
@@ -684,12 +684,12 @@ deliberately empty. It is the shell that says whether a framework can dress an
 application.
 
 ```powershell
-doletc examples/browser.dlt -o examples/eqoi-browser.exe --target windows/x86_64 --no-console
+doletc examples/browser.dlt -o examples/sooryn-browser.exe --target windows/x86_64 --no-console
 ```
 
 Its text is Inter, loaded once from the examples' own assets at the pixel
 height the display scale calls for — about 80 ms at startup, and nothing per
-frame, because Eqoi borrows the cached atlas rather than rasterising glyphs
+frame, because Sooryn borrows the cached atlas rather than rasterising glyphs
 while drawing. Chrome is mostly labels packed into small widths, and a
 proportional face fits about half again as many characters into a tab as the
 built-in fixed one does. If the file is missing it says so on the page and
@@ -711,9 +711,9 @@ sliders, progress, text input, dropdowns, scrolling, drawing primitives,
 tooltips, drag and drop, modal layering, and application-managed state.
 
 ```powershell
-doletc examples/showcase.dlt -o examples/eqoi-showcase.exe --target windows/x86_64 --no-console
+doletc examples/showcase.dlt -o examples/sooryn-showcase.exe --target windows/x86_64 --no-console
 ```
 
 ```bash
-doletc examples/showcase.dlt -o examples/eqoi-showcase --target linux/x86_64
+doletc examples/showcase.dlt -o examples/sooryn-showcase --target linux/x86_64
 ```

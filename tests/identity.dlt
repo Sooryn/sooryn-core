@@ -1,4 +1,4 @@
-import eqoi
+import sooryn
 
 # Identity tests. Every one of these drives a real gesture across frames and
 # asserts on retained state — focus and drag ownership — which is exactly the
@@ -10,7 +10,7 @@ import eqoi
 SLIDER_X: i32 = 100
 SLIDER_W: i32 = 200
 
-fun drag_across_a_move(app: EqoiApp, value: i64, scoped: i32) -> i32:
+fun drag_across_a_move(app: SoorynApp, value: i64, scoped: i32) -> i32:
     # Frame 1: pointer on the slider, nothing held.
     app.inject_mouse_move(SLIDER_X + 10, 105)
     if app.begin_offscreen() == 1:
@@ -59,14 +59,14 @@ fun main() -> i32:
     # Without a pushed identity, position IS the identity: a slider that
     # moves mid-drag becomes a different widget and drops the gesture.
     # ---------------------------------------------------------------
-    a: EqoiApp = EqoiApp.headless(400, 300)
+    a: SoorynApp = SoorynApp.headless(400, 300)
     if a.is_valid() == 0:
-        print("eqoi identity: headless app creation failed")
+        print("sooryn identity: headless app creation failed")
         return 1
     unscoped_value: i64 = a.alloc_int(0)
     unscoped: i32 = drag_across_a_move(a, unscoped_value, 0)
     if unscoped != 75:
-        print("eqoi identity: unscoped slider did not stop tracking after it moved")
+        print("sooryn identity: unscoped slider did not stop tracking after it moved")
         a.destroy()
         return 2
     a.destroy()
@@ -75,14 +75,14 @@ fun main() -> i32:
     # With a pushed identity, position is irrelevant and the gesture
     # survives the move.
     # ---------------------------------------------------------------
-    b: EqoiApp = EqoiApp.headless(400, 300)
+    b: SoorynApp = SoorynApp.headless(400, 300)
     if b.is_valid() == 0:
-        print("eqoi identity: headless app creation failed")
+        print("sooryn identity: headless app creation failed")
         return 3
     scoped_value: i64 = b.alloc_int(0)
     scoped: i32 = drag_across_a_move(b, scoped_value, 1)
     if scoped != 90:
-        print("eqoi identity: scoped slider lost its drag when it moved")
+        print("sooryn identity: scoped slider lost its drag when it moved")
         b.destroy()
         return 4
     b.destroy()
@@ -91,9 +91,9 @@ fun main() -> i32:
     # Two sliders sharing one rectangle. Unscoped they share an identity,
     # so a drag meant for one drives both. Scoped they stay separate.
     # ---------------------------------------------------------------
-    c: EqoiApp = EqoiApp.headless(400, 300)
+    c: SoorynApp = SoorynApp.headless(400, 300)
     if c.is_valid() == 0:
-        print("eqoi identity: headless app creation failed")
+        print("sooryn identity: headless app creation failed")
         return 5
     left: i64 = c.alloc_int(0)
     right: i64 = c.alloc_int(0)
@@ -123,7 +123,7 @@ fun main() -> i32:
     # each sets ownership and then reads it back in the same call. Ownership
     # is settled by the frame after: only the last claimer keeps tracking.
     if c.get_int(left) != 30 or c.get_int(right) != 30:
-        print("eqoi identity: sliders did not both track on the press frame")
+        print("sooryn identity: sliders did not both track on the press frame")
         c.destroy()
         return 6
 
@@ -137,11 +137,11 @@ fun main() -> i32:
         c.pop_id()
         c.end()
     if c.get_int(left) != 30:
-        print("eqoi identity: a slider kept tracking after losing the drag")
+        print("sooryn identity: a slider kept tracking after losing the drag")
         c.destroy()
         return 21
     if c.get_int(right) != 50:
-        print("eqoi identity: the drag owner stopped tracking")
+        print("sooryn identity: the drag owner stopped tracking")
         c.destroy()
         return 22
     c.destroy()
@@ -150,26 +150,26 @@ fun main() -> i32:
     # Stack mechanics: nesting composes, popping restores, and a cleared
     # stack returns the widget to position-derived identity.
     # ---------------------------------------------------------------
-    d: EqoiApp = EqoiApp.headless(200, 200)
+    d: SoorynApp = SoorynApp.headless(200, 200)
     if d.is_valid() == 0:
-        print("eqoi identity: headless app creation failed")
+        print("sooryn identity: headless app creation failed")
         return 7
 
     positional: i64 = d.widget_id(1, 10, 20)
     if d.current_id() != 0:
-        print("eqoi identity: a fresh app reports a pushed identity")
+        print("sooryn identity: a fresh app reports a pushed identity")
         d.destroy()
         return 8
 
     d.push_id_str("panel")
     outer: i64 = d.current_id()
     if outer == 0:
-        print("eqoi identity: push_id_str produced no identity")
+        print("sooryn identity: push_id_str produced no identity")
         d.destroy()
         return 9
     scoped_id: i64 = d.widget_id(1, 10, 20)
     if scoped_id == positional:
-        print("eqoi identity: a pushed identity did not displace position")
+        print("sooryn identity: a pushed identity did not displace position")
         d.destroy()
         return 10
 
@@ -177,12 +177,12 @@ fun main() -> i32:
     # two text inputs under one push_id would share a caret.
     second_in_scope: i64 = d.widget_id(1, 10, 20)
     if second_in_scope == scoped_id:
-        print("eqoi identity: two widgets in one scope collapsed into one")
+        print("sooryn identity: two widgets in one scope collapsed into one")
         d.destroy()
         return 26
     # Same scope, different widget kind: identities must stay distinct.
     if d.widget_id(2, 10, 20) == scoped_id:
-        print("eqoi identity: two widget kinds collided inside one scope")
+        print("sooryn identity: two widget kinds collided inside one scope")
         d.destroy()
         return 12
     d.pop_id()
@@ -191,7 +191,7 @@ fun main() -> i32:
     # layout has since moved it. This is the property position cannot give.
     d.push_id_str("panel")
     if d.widget_id(1, 99, 99) != scoped_id:
-        print("eqoi identity: a scoped widget changed identity when it moved")
+        print("sooryn identity: a scoped widget changed identity when it moved")
         d.destroy()
         return 11
     d.pop_id()
@@ -205,25 +205,25 @@ fun main() -> i32:
     d.pop_id()
     # Two rows of a list: same widget, same place in each row, different rows.
     if first_item == second_item:
-        print("eqoi identity: nested integer scopes collided")
+        print("sooryn identity: nested integer scopes collided")
         d.destroy()
         return 13
     if first_item == scoped_id or second_item == scoped_id:
-        print("eqoi identity: a nested scope did not fold in its parent")
+        print("sooryn identity: a nested scope did not fold in its parent")
         d.destroy()
         return 14
     if d.current_id() != outer:
-        print("eqoi identity: pop_id did not restore the parent scope")
+        print("sooryn identity: pop_id did not restore the parent scope")
         d.destroy()
         return 15
 
     d.pop_id()
     if d.current_id() != 0:
-        print("eqoi identity: the stack did not unwind to empty")
+        print("sooryn identity: the stack did not unwind to empty")
         d.destroy()
         return 16
     if d.widget_id(1, 10, 20) != positional:
-        print("eqoi identity: an empty stack did not restore position identity")
+        print("sooryn identity: an empty stack did not restore position identity")
         d.destroy()
         return 17
 
@@ -234,7 +234,7 @@ fun main() -> i32:
     d.push_id_str("b")
     d.clear_id_stack()
     if d.current_id() != 0 or d.widget_id(1, 10, 20) != positional:
-        print("eqoi identity: clear_id_stack left a scope behind")
+        print("sooryn identity: clear_id_stack left a scope behind")
         d.destroy()
         return 18
 
@@ -245,7 +245,7 @@ fun main() -> i32:
         i = i + 1
     deep: i64 = d.current_id()
     if deep == 0:
-        print("eqoi identity: the stack failed to grow")
+        print("sooryn identity: the stack failed to grow")
         d.destroy()
         return 19
     i = 0
@@ -253,10 +253,10 @@ fun main() -> i32:
         d.pop_id()
         i = i + 1
     if d.current_id() != 0:
-        print("eqoi identity: a grown stack did not unwind")
+        print("sooryn identity: a grown stack did not unwind")
         d.destroy()
         return 20
 
     d.destroy()
-    print("eqoi identity: ok")
+    print("sooryn identity: ok")
     return 0

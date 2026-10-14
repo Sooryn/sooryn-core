@@ -1,4 +1,4 @@
-import eqoi
+import sooryn
 
 fun showcase_mode_label(mode: i32) -> str:
     if mode == 1:
@@ -12,11 +12,11 @@ fun showcase_copy_text(destination: i64, value: str):
     Memory.copy(destination, value as i64, length + 1)
 
 fun main() -> i32:
-    app: EqoiApp = EqoiApp.create("Eqoi Component Showcase", 1120, 720)
+    app: SoorynApp = SoorynApp.create("Sooryn Component Showcase", 1120, 720)
     if app.is_valid() == 0:
         return 1
 
-    # Load a normal proportional TrueType face once. Eqoi borrows the cached
+    # Load a normal proportional TrueType face once. Sooryn borrows the cached
     # A8 atlas, so no parsing or glyph rasterization occurs during frames.
     app_font: FontFace = font_face_load_ttf("assets/fonts/Inter-Regular.ttf", 16)
     if app_font.is_valid() == 1:
@@ -68,7 +68,7 @@ fun main() -> i32:
 
             # Header and global theme switch.
             app.panel(margin, margin, content_w, header_h)
-            app.title(margin + 18, margin + 14, "Eqoi Component Showcase")
+            app.title(margin + 18, margin + 14, "Sooryn Component Showcase")
             app.muted_label(margin + 302, margin + 23, "Native UI rendered by pure Dolet")
             if app.toggle(margin + content_w - 166, margin + 19, "Light", light_theme) == 1:
                 if app.get_bool(light_theme) == 1:
@@ -232,9 +232,9 @@ fun main() -> i32:
             else:
                 app.panel_begin(margin, content_y, content_w, content_h)
                 app.title(margin + 24, content_y + 22, "About this showcase")
-                app.label(margin + 24, content_y + 66, "Eqoi is the native application framework for Dolet.")
+                app.label(margin + 24, content_y + 66, "Sooryn is the native application framework for Dolet.")
                 app.muted_label(margin + 24, content_y + 96, "This executable uses no browser, HTML, CSS, JavaScript or web view.")
-                app.muted_label(margin + 24, content_y + 120, "Eqoi owns lifecycle and widgets; UI owns pure software rendering.")
+                app.muted_label(margin + 24, content_y + 120, "Sooryn owns lifecycle and widgets; UI owns pure software rendering.")
                 app.separator(margin + 24, content_y + 154, content_w - 48)
 
                 app.label(margin + 24, content_y + 184, "Theme palette")
@@ -255,13 +255,13 @@ fun main() -> i32:
                 app.secondary_button(margin + 218, content_y + 318, 180, 42, "Secondary action")
                 app.panel_end()
 
-            app.muted_label(margin, screen_h - footer_h, "Resize the window and interact with every page | Eqoi 0.7.0")
+            app.muted_label(margin, screen_h - footer_h, "Resize the window and interact with every page | Sooryn 0.7.0")
 
             # Modal is recorded last so it is always above the page content.
             if app.get_bool(modal_open) == 1:
                 modal_w: i32 = 380
                 modal_h: i32 = 190
-                if app.modal_begin(modal_w, modal_h, "Eqoi modal dialog") == 1:
+                if app.modal_begin(modal_w, modal_h, "Sooryn modal dialog") == 1:
                     modal_x: i32 = (app.canvas_w - modal_w) / 2
                     modal_y: i32 = (app.canvas_h - modal_h) / 2
                     app.label(modal_x + 24, modal_y + 58, "Modal layering and responsive centering work.")

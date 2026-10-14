@@ -1,4 +1,4 @@
-import eqoi
+import sooryn
 
 # Arabic in ordinary widgets.
 #
@@ -7,13 +7,13 @@ import eqoi
 # the pixels, so Arabic goes through labels, buttons and a text field the same
 # way Latin does.
 #
-# The font is loaded from the system rather than shipped: Eqoi's built-in face
+# The font is loaded from the system rather than shipped: Sooryn's built-in face
 # covers ASCII only, and no Arabic face is redistributed with this repository.
 
 FONT_PATH: str = "C:/Windows/Fonts/arial.ttf"
 
 fun main() -> i32:
-    app: EqoiApp = EqoiApp.create("Eqoi Arabic", 880, 700)
+    app: SoorynApp = SoorynApp.create("Sooryn Arabic", 880, 700)
     if app.is_valid() == 0:
         return 1
 
@@ -35,10 +35,10 @@ fun main() -> i32:
         if app.begin() == 1:
             # app.column carries the direction, so nested layouts stay
             # consistent without repeating it.
-            page: EqoiLayout = app.column(24, 20, app.width - 48, app.height - 40, 0, 14)
+            page: SoorynLayout = app.column(24, 20, app.width - 48, app.height - 40, 0, 14)
 
             head: UIRect = page.next(0, 28)
-            app.title_in(head, "العربية في واجهات Eqoi")
+            app.title_in(head, "العربية في واجهات Sooryn")
             if loaded == 0:
                 app.text(24, 60, "Could not load the system font.", app.theme.danger)
             else:
@@ -52,12 +52,12 @@ fun main() -> i32:
             l2: UIRect = page.next(0, 22)
             app.label_in(l2, "لَا إِلٰهَ إِلَّا اللَّه")
             l3: UIRect = page.next(0, 22)
-            app.label_in(l3, "الإصدار 0.16 من مكتبة eqoi صدر سنة 2026")
+            app.label_in(l3, "الإصدار 0.16 من مكتبة sooryn صدر سنة 2026")
             page.skip(8)
 
             # Widgets, with Arabic labels.
             buttons: UIRect = page.next(0, 42)
-            row: EqoiLayout = app.row_in(buttons, 0, 12)
+            row: SoorynLayout = app.row_in(buttons, 0, 12)
             row.flex(3, 2)
             first: UIRect = row.next_flex(2)
             second: UIRect = row.next_flex(1)

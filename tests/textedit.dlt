@@ -1,4 +1,4 @@
-import eqoi
+import sooryn
 
 # Text editing: a caret that moves, a selection that spans, and edits that
 # land where the caret is rather than always at the end.
@@ -19,7 +19,7 @@ fun buf_is(buf: i64, expected: str) -> i32:
         i = i + 1
     return 1
 
-fun frame(app: EqoiApp, buf: i64) -> i32:
+fun frame(app: SoorynApp, buf: i64) -> i32:
     if app.begin_offscreen() == 1:
         changed: i32 = app.text_input(FIELD_X, FIELD_Y, FIELD_W, FIELD_H, buf, 31)
         app.end()
@@ -27,13 +27,13 @@ fun frame(app: EqoiApp, buf: i64) -> i32:
     return 0
 
 fun main() -> i32:
-    app: EqoiApp = EqoiApp.headless(400, 300)
+    app: SoorynApp = SoorynApp.headless(400, 300)
     if app.is_valid() == 0:
-        print("eqoi textedit: headless app creation failed")
+        print("sooryn textedit: headless app creation failed")
         return 1
     buf: i64 = app.alloc_buf(40)
     if buf == 0:
-        print("eqoi textedit: alloc_buf failed")
+        print("sooryn textedit: alloc_buf failed")
         app.destroy()
         return 2
 
@@ -50,11 +50,11 @@ fun main() -> i32:
     app.inject_text("Hello")
     frame(app, buf)
     if buf_is(buf, "Hello") == 0:
-        print("eqoi textedit: typing did not fill the buffer")
+        print("sooryn textedit: typing did not fill the buffer")
         app.destroy()
         return 3
     if app.text_caret != 5:
-        print("eqoi textedit: the caret did not follow the typed text")
+        print("sooryn textedit: the caret did not follow the typed text")
         app.destroy()
         return 4
 
@@ -66,18 +66,18 @@ fun main() -> i32:
     app.inject_arrow_left()
     frame(app, buf)
     if app.text_caret != 3:
-        print("eqoi textedit: the left arrow did not move the caret")
+        print("sooryn textedit: the left arrow did not move the caret")
         app.destroy()
         return 5
 
     app.inject_text("XY")
     frame(app, buf)
     if buf_is(buf, "HelXYlo") == 0:
-        print("eqoi textedit: text was appended instead of inserted at the caret")
+        print("sooryn textedit: text was appended instead of inserted at the caret")
         app.destroy()
         return 6
     if app.text_caret != 5:
-        print("eqoi textedit: the caret did not advance past the insertion")
+        print("sooryn textedit: the caret did not advance past the insertion")
         app.destroy()
         return 7
 
@@ -87,14 +87,14 @@ fun main() -> i32:
     app.inject_backspace()
     frame(app, buf)
     if buf_is(buf, "HelXlo") == 0:
-        print("eqoi textedit: backspace did not delete before the caret")
+        print("sooryn textedit: backspace did not delete before the caret")
         app.destroy()
         return 8
 
     app.inject_delete()
     frame(app, buf)
     if buf_is(buf, "HelXo") == 0:
-        print("eqoi textedit: Delete did not remove the character after the caret")
+        print("sooryn textedit: Delete did not remove the character after the caret")
         app.destroy()
         return 9
 
@@ -104,13 +104,13 @@ fun main() -> i32:
     app.inject_home()
     frame(app, buf)
     if app.text_caret != 0:
-        print("eqoi textedit: Home did not move to the start")
+        print("sooryn textedit: Home did not move to the start")
         app.destroy()
         return 10
     app.inject_end()
     frame(app, buf)
     if app.text_caret != 5:
-        print("eqoi textedit: End did not move to the end")
+        print("sooryn textedit: End did not move to the end")
         app.destroy()
         return 11
 
@@ -124,22 +124,22 @@ fun main() -> i32:
     frame(app, buf)
     app.inject_modifiers(0, 0, 0)
     if app.text_has_selection() != 1:
-        print("eqoi textedit: Shift+arrow did not start a selection")
+        print("sooryn textedit: Shift+arrow did not start a selection")
         app.destroy()
         return 12
     if app.text_sel_start() != 3 or app.text_sel_end() != 5:
-        print("eqoi textedit: the selection spans the wrong range")
+        print("sooryn textedit: the selection spans the wrong range")
         app.destroy()
         return 13
 
     app.inject_text("p")
     frame(app, buf)
     if buf_is(buf, "Help") == 0:
-        print("eqoi textedit: typing did not replace the selection")
+        print("sooryn textedit: typing did not replace the selection")
         app.destroy()
         return 14
     if app.text_has_selection() != 0:
-        print("eqoi textedit: the selection survived being replaced")
+        print("sooryn textedit: the selection survived being replaced")
         app.destroy()
         return 15
 
@@ -149,13 +149,13 @@ fun main() -> i32:
     frame(app, buf)
     app.inject_modifiers(0, 0, 0)
     if app.text_sel_start() != 0 or app.text_sel_end() != 4:
-        print("eqoi textedit: Shift+Home did not select back to the start")
+        print("sooryn textedit: Shift+Home did not select back to the start")
         app.destroy()
         return 16
     app.inject_backspace()
     frame(app, buf)
     if Memory.strlen(buf as str) != 0:
-        print("eqoi textedit: backspace did not delete the whole selection")
+        print("sooryn textedit: backspace did not delete the whole selection")
         app.destroy()
         return 17
 
@@ -165,7 +165,7 @@ fun main() -> i32:
     app.inject_text("abcdefgh")
     frame(app, buf)
     if buf_is(buf, "abcdefgh") == 0:
-        print("eqoi textedit: could not refill the buffer")
+        print("sooryn textedit: could not refill the buffer")
         app.destroy()
         return 18
 
@@ -175,7 +175,7 @@ fun main() -> i32:
     app.inject_left_down()
     frame(app, buf)
     if app.text_caret != 0:
-        print("eqoi textedit: a click at the start did not put the caret there")
+        print("sooryn textedit: a click at the start did not put the caret there")
         app.destroy()
         return 19
 
@@ -184,11 +184,11 @@ fun main() -> i32:
     app.inject_mouse_move(text_x + width_of_four, FIELD_Y + 14)
     frame(app, buf)
     if app.text_caret != 4:
-        print("eqoi textedit: dragging did not move the caret with the pointer")
+        print("sooryn textedit: dragging did not move the caret with the pointer")
         app.destroy()
         return 20
     if app.text_sel_start() != 0 or app.text_sel_end() != 4:
-        print("eqoi textedit: dragging did not extend the selection")
+        print("sooryn textedit: dragging did not extend the selection")
         app.destroy()
         return 21
     app.inject_left_up()
@@ -202,7 +202,7 @@ fun main() -> i32:
     app.inject_text("0123456789012345678901234567890123456789")
     frame(app, buf)
     if Memory.strlen(buf as str) != 31:
-        print("eqoi textedit: typing past the maximum was not truncated")
+        print("sooryn textedit: typing past the maximum was not truncated")
         app.destroy()
         return 22
 
@@ -215,10 +215,10 @@ fun main() -> i32:
     app.inject_left_up()
     frame(app, buf)
     if app.text_owner != 0:
-        print("eqoi textedit: the caret stayed with an unfocused field")
+        print("sooryn textedit: the caret stayed with an unfocused field")
         app.destroy()
         return 23
 
     app.destroy()
-    print("eqoi textedit: ok")
+    print("sooryn textedit: ok")
     return 0

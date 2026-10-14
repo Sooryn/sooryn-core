@@ -1,4 +1,4 @@
-import eqoi
+import sooryn
 import image
 
 # Drawing pixel buffers.
@@ -12,15 +12,15 @@ fun put_rgba(buffer: i64, index: i32, r: i32, g: i32, b: i32, a: i32):
     Memory.write_i32(buffer + (index as i64) * 4, (r & 255) | ((g & 255) << 8) | ((b & 255) << 16) | ((a & 255) << 24))
 
 fun main() -> i32:
-    app: EqoiApp = EqoiApp.headless(200, 200)
+    app: SoorynApp = SoorynApp.headless(200, 200)
     if app.is_valid() == 0:
-        print("eqoi images: headless app creation failed")
+        print("sooryn images: headless app creation failed")
         return 1
 
     # A 2x2 source: red, green / blue, transparent.
     source: i64 = Memory.malloc_zeroed(16)
     if source == 0:
-        print("eqoi images: allocation failed")
+        print("sooryn images: allocation failed")
         app.destroy()
         return 2
     put_rgba(source, 0, 255, 0, 0, 255)
@@ -28,9 +28,9 @@ fun main() -> i32:
     put_rgba(source, 2, 0, 0, 255, 255)
     put_rgba(source, 3, 255, 255, 255, 0)
 
-    picture: EqoiImage = app.new_image_rgba(source, 2, 2, 8)
+    picture: SoorynImage = app.new_image_rgba(source, 2, 2, 8)
     if picture.is_valid() != 1:
-        print("eqoi images: the handle was not built")
+        print("sooryn images: the handle was not built")
         app.destroy()
         return 3
 
@@ -43,27 +43,27 @@ fun main() -> i32:
         app.image(10, 10, picture)
         app.end()
     if app.pixel_at(10, 10) != ui_rgb(255, 0, 0):
-        print("eqoi images: red did not survive the channel conversion")
+        print("sooryn images: red did not survive the channel conversion")
         app.destroy()
         return 4
     if app.pixel_at(11, 10) != ui_rgb(0, 255, 0):
-        print("eqoi images: green is wrong")
+        print("sooryn images: green is wrong")
         app.destroy()
         return 5
     if app.pixel_at(10, 11) != ui_rgb(0, 0, 255):
-        print("eqoi images: blue is wrong")
+        print("sooryn images: blue is wrong")
         app.destroy()
         return 6
 
     # A fully transparent pixel leaves what was underneath alone.
     if app.pixel_at(11, 11) != app.theme.background:
-        print("eqoi images: a transparent pixel overwrote the background")
+        print("sooryn images: a transparent pixel overwrote the background")
         app.destroy()
         return 7
 
     # And nothing was drawn outside the two-by-two.
     if app.pixel_at(12, 10) == ui_rgb(255, 0, 0):
-        print("eqoi images: the image drew past its width")
+        print("sooryn images: the image drew past its width")
         app.destroy()
         return 8
 
@@ -74,15 +74,15 @@ fun main() -> i32:
         app.image_scaled(20, 20, 40, 40, picture, 0)
         app.end()
     if app.pixel_at(20, 20) != ui_rgb(255, 0, 0) or app.pixel_at(39, 39) != ui_rgb(255, 0, 0):
-        print("eqoi images: the top-left quarter is not the first pixel")
+        print("sooryn images: the top-left quarter is not the first pixel")
         app.destroy()
         return 9
     if app.pixel_at(40, 20) != ui_rgb(0, 255, 0):
-        print("eqoi images: the top-right quarter is not the second pixel")
+        print("sooryn images: the top-right quarter is not the second pixel")
         app.destroy()
         return 10
     if app.pixel_at(20, 40) != ui_rgb(0, 0, 255):
-        print("eqoi images: the bottom-left quarter is not the third pixel")
+        print("sooryn images: the bottom-left quarter is not the third pixel")
         app.destroy()
         return 11
 
@@ -94,11 +94,11 @@ fun main() -> i32:
         app.icon(60, 60, 20, 20, picture, ui_rgb(255, 0, 0))
         app.end()
     if app.pixel_at(60, 60) != ui_rgb(255, 0, 0):
-        print("eqoi images: a red pixel through a red tint changed")
+        print("sooryn images: a red pixel through a red tint changed")
         app.destroy()
         return 12
     if app.pixel_at(75, 60) != ui_rgb(0, 0, 0):
-        print("eqoi images: a green pixel through a red tint kept its green")
+        print("sooryn images: a green pixel through a red tint kept its green")
         app.destroy()
         return 13
 
@@ -111,11 +111,11 @@ fun main() -> i32:
         app.end()
     # 40 tall, so 40 wide, centred in 80: it starts at 100 + 20.
     if app.pixel_at(120, 100) != ui_rgb(255, 0, 0):
-        print("eqoi images: the fitted image is not where it should be")
+        print("sooryn images: the fitted image is not where it should be")
         app.destroy()
         return 14
     if app.pixel_at(105, 100) == ui_rgb(255, 0, 0):
-        print("eqoi images: the fitted image was stretched to the box")
+        print("sooryn images: the fitted image was stretched to the box")
         app.destroy()
         return 15
 
@@ -128,21 +128,21 @@ fun main() -> i32:
         app.pop_clip()
         app.end()
     if app.pixel_at(5, 155) != ui_rgb(255, 0, 0):
-        print("eqoi images: the clipped image did not draw inside the clip")
+        print("sooryn images: the clipped image did not draw inside the clip")
         app.destroy()
         return 16
     if app.pixel_at(20, 155) == ui_rgb(255, 0, 0):
-        print("eqoi images: the image drew outside the clip")
+        print("sooryn images: the image drew outside the clip")
         app.destroy()
         return 17
 
     # An empty handle draws nothing rather than reaching through a null.
-    empty: EqoiImage = EqoiImage()
+    empty: SoorynImage = SoorynImage()
     if app.begin_offscreen() == 1:
         app.image(150, 150, empty)
         app.end()
     if app.pixel_at(150, 150) != app.theme.background:
-        print("eqoi images: an empty handle drew something")
+        print("sooryn images: an empty handle drew something")
         app.destroy()
         return 18
     Memory.free(source)
@@ -154,33 +154,33 @@ fun main() -> i32:
     made: Image = Image.create(4, 4)
     if made.data == 0:
         app.destroy()
-        print("eqoi images: ok (drawing only; the image package would not allocate)")
+        print("sooryn images: ok (drawing only; the image package would not allocate)")
         return 0
     i: i32 = 0
     while i < 16:
         Memory.write_i32(made.data + (i as i64) * 4, image_rgba(200, 30, 40, 255))
         i = i + 1
 
-    path: str = "eqoi_image_roundtrip.png"
+    path: str = "sooryn_image_roundtrip.png"
     if PNG.save(made, path) == 0:
         app.destroy()
-        print("eqoi images: ok (drawing only; PNG could not be written here)")
+        print("sooryn images: ok (drawing only; PNG could not be written here)")
         return 0
     loaded: Image = PNG.load(path)
     if loaded.data == 0 or loaded.width != 4 or loaded.height != 4:
         app.destroy()
-        print("eqoi images: the PNG did not read back")
+        print("sooryn images: the PNG did not read back")
         return 19
 
-    from_png: EqoiImage = app.new_image_rgba(loaded.data, loaded.width, loaded.height, loaded.stride)
+    from_png: SoorynImage = app.new_image_rgba(loaded.data, loaded.width, loaded.height, loaded.stride)
     if app.begin_offscreen() == 1:
         app.image(160, 10, from_png)
         app.end()
     if app.pixel_at(160, 10) != ui_rgb(200, 30, 40):
-        print("eqoi images: a decoded PNG did not draw in its own colours")
+        print("sooryn images: a decoded PNG did not draw in its own colours")
         app.destroy()
         return 20
 
     app.destroy()
-    print("eqoi images: ok")
+    print("sooryn images: ok")
     return 0

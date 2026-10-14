@@ -1,7 +1,7 @@
-import eqoi
+import sooryn
 
 fun main() -> i32:
-    column: EqoiLayout = EqoiLayout.column(10, 20, 300, 200, 12, 8)
+    column: SoorynLayout = SoorynLayout.column(10, 20, 300, 200, 12, 8)
     first: UIRect = column.next(0, 30)
     second: UIRect = column.next(120, 40)
     fill: UIRect = column.next(0, 0)
@@ -15,18 +15,18 @@ fun main() -> i32:
     if fill.top != 118 or fill.bottom != 208:
         return 4
 
-    row: EqoiLayout = EqoiLayout.row(0, 0, 200, 60, 10, 5)
+    row: SoorynLayout = SoorynLayout.row(0, 0, 200, 60, 10, 5)
     left: UIRect = row.next(50, 0)
     right: UIRect = row.next(0, 0)
     if left.right != 60 or right.left != 65 or right.right != 190:
         return 5
 
-    app: EqoiApp = EqoiApp()
-    app.set_theme(eqoi_theme_dark())
+    app: SoorynApp = SoorynApp()
+    app.set_theme(sooryn_theme_dark())
     if app.theme.spacing != 12 or app.theme.corner_radius != 6:
         return 6
 
-    light: EqoiTheme = eqoi_theme_light()
+    light: SoorynTheme = sooryn_theme_light()
     if light.text == light.background:
         return 7
 

@@ -1,5 +1,5 @@
 # ============================
-#  Eqoi Layout
+#  Sooryn Layout
 # ============================
 # Deterministic layout primitives. Layout computes rectangles only; it never
 # draws and never touches a window backend, so every rule here is testable
@@ -21,33 +21,33 @@
 # cross size sits at the start of the cross axis, and rectangles are always
 # clamped to the layout bounds.
 
-EQOI_LAYOUT_COLUMN: i32 = 1
-EQOI_LAYOUT_ROW:    i32 = 2
-EQOI_LAYOUT_GRID:   i32 = 3
+SOORYN_LAYOUT_COLUMN: i32 = 1
+SOORYN_LAYOUT_ROW:    i32 = 2
+SOORYN_LAYOUT_GRID:   i32 = 3
 
-EQOI_DIR_LTR: i32 = 0
-EQOI_DIR_RTL: i32 = 1
+SOORYN_DIR_LTR: i32 = 0
+SOORYN_DIR_RTL: i32 = 1
 
-EQOI_ALIGN_START:   i32 = 0
-EQOI_ALIGN_CENTER:  i32 = 1
-EQOI_ALIGN_END:     i32 = 2
-EQOI_ALIGN_STRETCH: i32 = 3
+SOORYN_ALIGN_START:   i32 = 0
+SOORYN_ALIGN_CENTER:  i32 = 1
+SOORYN_ALIGN_END:     i32 = 2
+SOORYN_ALIGN_STRETCH: i32 = 3
 
 @stack
-struct EqoiLayout:
+struct SoorynLayout:
     x: i32 = 0
     y: i32 = 0
     width: i32 = 0
     height: i32 = 0
     padding: i32 = 0
     gap: i32 = 0
-    direction: i32 = EQOI_LAYOUT_COLUMN
+    direction: i32 = SOORYN_LAYOUT_COLUMN
     cursor_x: i32 = 0
     cursor_y: i32 = 0
 
     # Cross-axis placement for items that give an explicit cross size.
     # START reproduces the original behaviour.
-    align_cross: i32 = EQOI_ALIGN_START
+    align_cross: i32 = SOORYN_ALIGN_START
 
     # Space reserved around every item, expanding the slot it occupies.
     item_margin: i32 = 0
@@ -78,36 +78,36 @@ struct EqoiLayout:
     # place of a direction test in every size and position calculation.
     rtl: i32 = 0
 
-attach EqoiLayout:
-    static fun column(x: i32, y: i32, width: i32, height: i32, padding: i32, gap: i32) -> EqoiLayout:
-        layout: EqoiLayout = EqoiLayout()
-        layout.init(x, y, width, height, padding, gap, EQOI_LAYOUT_COLUMN)
+attach SoorynLayout:
+    static fun column(x: i32, y: i32, width: i32, height: i32, padding: i32, gap: i32) -> SoorynLayout:
+        layout: SoorynLayout = SoorynLayout()
+        layout.init(x, y, width, height, padding, gap, SOORYN_LAYOUT_COLUMN)
         return layout
 
-    static fun row(x: i32, y: i32, width: i32, height: i32, padding: i32, gap: i32) -> EqoiLayout:
-        layout: EqoiLayout = EqoiLayout()
-        layout.init(x, y, width, height, padding, gap, EQOI_LAYOUT_ROW)
+    static fun row(x: i32, y: i32, width: i32, height: i32, padding: i32, gap: i32) -> SoorynLayout:
+        layout: SoorynLayout = SoorynLayout()
+        layout.init(x, y, width, height, padding, gap, SOORYN_LAYOUT_ROW)
         return layout
 
     # Nest inside a rectangle another layout produced. This is how a child
     # layout is built: take a slot, then lay out inside it.
-    static fun column_in(rect: UIRect, padding: i32, gap: i32) -> EqoiLayout:
-        return EqoiLayout.column(rect.left, rect.top, rect.right - rect.left, rect.bottom - rect.top, padding, gap)
+    static fun column_in(rect: UIRect, padding: i32, gap: i32) -> SoorynLayout:
+        return SoorynLayout.column(rect.left, rect.top, rect.right - rect.left, rect.bottom - rect.top, padding, gap)
 
-    static fun row_in(rect: UIRect, padding: i32, gap: i32) -> EqoiLayout:
-        return EqoiLayout.row(rect.left, rect.top, rect.right - rect.left, rect.bottom - rect.top, padding, gap)
+    static fun row_in(rect: UIRect, padding: i32, gap: i32) -> SoorynLayout:
+        return SoorynLayout.row(rect.left, rect.top, rect.right - rect.left, rect.bottom - rect.top, padding, gap)
 
-    static fun grid(x: i32, y: i32, width: i32, height: i32, padding: i32, gap: i32, columns: i32) -> EqoiLayout:
-        layout: EqoiLayout = EqoiLayout()
-        layout.init(x, y, width, height, padding, gap, EQOI_LAYOUT_GRID)
+    static fun grid(x: i32, y: i32, width: i32, height: i32, padding: i32, gap: i32, columns: i32) -> SoorynLayout:
+        layout: SoorynLayout = SoorynLayout()
+        layout.init(x, y, width, height, padding, gap, SOORYN_LAYOUT_GRID)
         if columns < 1:
             layout.columns = 1
         else:
             layout.columns = columns
         return layout
 
-    static fun grid_in(rect: UIRect, padding: i32, gap: i32, columns: i32) -> EqoiLayout:
-        return EqoiLayout.grid(rect.left, rect.top, rect.right - rect.left, rect.bottom - rect.top, padding, gap, columns)
+    static fun grid_in(rect: UIRect, padding: i32, gap: i32, columns: i32) -> SoorynLayout:
+        return SoorynLayout.grid(rect.left, rect.top, rect.right - rect.left, rect.bottom - rect.top, padding, gap, columns)
 
     fun init(self, x: i32, y: i32, width: i32, height: i32, padding: i32, gap: i32, direction: i32):
         self.x = x
@@ -117,7 +117,7 @@ attach EqoiLayout:
         self.padding = padding
         self.gap = gap
         self.direction = direction
-        self.align_cross = EQOI_ALIGN_START
+        self.align_cross = SOORYN_ALIGN_START
         self.item_margin = 0
         self.min_main = 0
         self.max_main = 0
@@ -156,13 +156,13 @@ attach EqoiLayout:
     fun align_main(self, mode: i32, content_main: i32):
         span: i32 = self.inner_main()
         offset: i32 = 0
-        if mode == EQOI_ALIGN_CENTER:
+        if mode == SOORYN_ALIGN_CENTER:
             offset = (span - content_main) / 2
-        elif mode == EQOI_ALIGN_END:
+        elif mode == SOORYN_ALIGN_END:
             offset = span - content_main
         if offset < 0:
             offset = 0
-        if self.direction == EQOI_LAYOUT_ROW:
+        if self.direction == SOORYN_LAYOUT_ROW:
             self.cursor_x = self.x + self.padding + offset
         else:
             self.cursor_y = self.y + self.padding + offset
@@ -217,12 +217,12 @@ attach EqoiLayout:
         return value
 
     fun inner_main(self) -> i32:
-        if self.direction == EQOI_LAYOUT_ROW:
+        if self.direction == SOORYN_LAYOUT_ROW:
             return self.inner_width()
         return self.inner_height()
 
     fun inner_cross(self) -> i32:
-        if self.direction == EQOI_LAYOUT_ROW:
+        if self.direction == SOORYN_LAYOUT_ROW:
             return self.inner_height()
         return self.inner_width()
 
@@ -240,7 +240,7 @@ attach EqoiLayout:
 
     fun remaining_cross(self) -> i32:
         value: i32 = 0
-        if self.direction == EQOI_LAYOUT_ROW:
+        if self.direction == SOORYN_LAYOUT_ROW:
             value = self.y + self.height - self.padding - self.cursor_y
         else:
             value = self.x + self.width - self.padding - self.cursor_x
@@ -249,7 +249,7 @@ attach EqoiLayout:
         return value
 
     fun remaining_main(self) -> i32:
-        if self.direction == EQOI_LAYOUT_ROW:
+        if self.direction == SOORYN_LAYOUT_ROW:
             return self.remaining_width()
         return self.remaining_height()
 
@@ -260,7 +260,7 @@ attach EqoiLayout:
 
     # The rectangle the placed content occupies, including padding.
     fun used_rect(self) -> UIRect:
-        if self.direction == EQOI_LAYOUT_ROW:
+        if self.direction == SOORYN_LAYOUT_ROW:
             return ui_make_rect(self.x, self.y, self.used_main + self.padding * 2, self.height)
         return ui_make_rect(self.x, self.y, self.width, self.used_main + self.padding * 2)
 
@@ -273,9 +273,9 @@ attach EqoiLayout:
     # A non-positive cross size fills the inner area. A non-positive main size
     # consumes the remaining area. Rectangles are always clamped to bounds.
     fun next(self, item_width: i32, item_height: i32) -> UIRect:
-        if self.direction == EQOI_LAYOUT_GRID:
+        if self.direction == SOORYN_LAYOUT_GRID:
             return self.next_cell(item_height)
-        if self.direction == EQOI_LAYOUT_ROW:
+        if self.direction == SOORYN_LAYOUT_ROW:
             return self.place(item_width, item_height)
         return self.place(item_height, item_width)
 
@@ -306,21 +306,21 @@ attach EqoiLayout:
         if cross_span < 0:
             cross_span = 0
         cross: i32 = cross_size
-        if cross <= 0 or self.align_cross == EQOI_ALIGN_STRETCH:
+        if cross <= 0 or self.align_cross == SOORYN_ALIGN_STRETCH:
             cross = cross_span
         if cross > cross_span:
             cross = cross_span
 
         cross_offset: i32 = 0
-        if self.align_cross == EQOI_ALIGN_CENTER:
+        if self.align_cross == SOORYN_ALIGN_CENTER:
             cross_offset = (cross_span - cross) / 2
-        elif self.align_cross == EQOI_ALIGN_END:
+        elif self.align_cross == SOORYN_ALIGN_END:
             cross_offset = cross_span - cross
         if cross_offset < 0:
             cross_offset = 0
 
         rect: UIRect = ui_make_rect(0, 0, 0, 0)
-        if self.direction == EQOI_LAYOUT_ROW:
+        if self.direction == SOORYN_LAYOUT_ROW:
             rect = ui_make_rect(self.cursor_x + margin, self.cursor_y + margin + cross_offset, main, cross)
             self.cursor_x = self.cursor_x + main + slot_extra + self.gap
         else:
@@ -417,7 +417,7 @@ attach EqoiLayout:
         amount: i32 = main_size
         if amount < 0:
             amount = 0
-        if self.direction == EQOI_LAYOUT_ROW:
+        if self.direction == SOORYN_LAYOUT_ROW:
             self.cursor_x = self.cursor_x + amount + self.gap
         else:
             self.cursor_y = self.cursor_y + amount + self.gap
@@ -427,7 +427,7 @@ attach EqoiLayout:
             self.used_main = amount
 
     fun new_line(self):
-        if self.direction == EQOI_LAYOUT_ROW:
+        if self.direction == SOORYN_LAYOUT_ROW:
             self.cursor_x = self.x + self.padding
             self.cursor_y = self.cursor_y + self.line_extent + self.gap
         else:

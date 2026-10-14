@@ -1,5 +1,5 @@
 # ============================
-#  Eqoi Application State
+#  Sooryn Application State
 # ============================
 # A widget that outlives a frame keeps its value somewhere the application
 # owns. That has always worked here, but it worked through a bare i64: every
@@ -11,9 +11,9 @@
 # holds, a text handle knows how long it may get, and the compiler refuses
 # the mistakes that a bare pointer waves through:
 #
-#     enabled: EqoiBool = app.new_bool(1)
-#     volume:  EqoiInt  = app.new_int(64)
-#     name:    EqoiText = app.new_text(64)
+#     enabled: SoorynBool = app.new_bool(1)
+#     volume:  SoorynInt  = app.new_int(64)
+#     name:    SoorynText = app.new_text(64)
 #
 #     app.checkbox(x, y, "Enable", enabled)
 #     app.slider(x, y, 200, 0, 100, volume)
@@ -23,22 +23,22 @@
 # against the old shape has to change.
 
 @stack
-struct EqoiInt:
+struct SoorynInt:
     ptr: i64 = 0
 
 @stack
-struct EqoiBool:
+struct SoorynBool:
     ptr: i64 = 0
 
 @stack
-struct EqoiText:
+struct SoorynText:
     ptr: i64 = 0
     # The longest text this may hold, not counting the terminator. Carrying
     # it here is the point: a length passed separately is a length that can
     # be passed wrongly.
     capacity: i32 = 0
 
-attach EqoiInt:
+attach SoorynInt:
     fun is_valid(self) -> i32:
         if self.ptr == 0:
             return 0
@@ -56,7 +56,7 @@ attach EqoiInt:
     fun add(self, amount: i32):
         self.set(self.get() + amount)
 
-attach EqoiBool:
+attach SoorynBool:
     fun is_valid(self) -> i32:
         if self.ptr == 0:
             return 0
@@ -77,7 +77,7 @@ attach EqoiBool:
         else:
             self.set(0)
 
-attach EqoiText:
+attach SoorynText:
     fun is_valid(self) -> i32:
         if self.ptr == 0:
             return 0
@@ -106,23 +106,23 @@ attach EqoiText:
         Memory.copy(self.ptr, value as i64, length)
         Memory.write_i8(self.ptr + length, 0 as i8)
 
-attach EqoiApp:
+attach SoorynApp:
     # ---------------------------------------------------------------
     # Making state
     # ---------------------------------------------------------------
     # Released with the application, like the untyped allocations they wrap.
-    fun new_int(self, initial: i32) -> EqoiInt:
-        handle: EqoiInt = EqoiInt()
+    fun new_int(self, initial: i32) -> SoorynInt:
+        handle: SoorynInt = SoorynInt()
         handle.ptr = self.alloc_int(initial)
         return handle
 
-    fun new_bool(self, initial: i32) -> EqoiBool:
-        handle: EqoiBool = EqoiBool()
+    fun new_bool(self, initial: i32) -> SoorynBool:
+        handle: SoorynBool = SoorynBool()
         handle.ptr = self.alloc_bool(initial)
         return handle
 
-    fun new_text(self, capacity: i32) -> EqoiText:
-        handle: EqoiText = EqoiText()
+    fun new_text(self, capacity: i32) -> SoorynText:
+        handle: SoorynText = SoorynText()
         handle.ptr = self.alloc_buf(capacity)
         handle.capacity = capacity
         return handle
@@ -130,42 +130,42 @@ attach EqoiApp:
     # ---------------------------------------------------------------
     # The same widgets, taking a handle
     # ---------------------------------------------------------------
-    fun checkbox(self, x: i32, y: i32, label: str, value: EqoiBool) -> i32:
+    fun checkbox(self, x: i32, y: i32, label: str, value: SoorynBool) -> i32:
         return self.checkbox(x, y, label, value.ptr)
 
-    fun toggle(self, x: i32, y: i32, label: str, value: EqoiBool) -> i32:
+    fun toggle(self, x: i32, y: i32, label: str, value: SoorynBool) -> i32:
         return self.toggle(x, y, label, value.ptr)
 
-    fun slider(self, x: i32, y: i32, width: i32, min_v: i32, max_v: i32, value: EqoiInt) -> i32:
+    fun slider(self, x: i32, y: i32, width: i32, min_v: i32, max_v: i32, value: SoorynInt) -> i32:
         return self.slider(x, y, width, min_v, max_v, value.ptr)
 
     # The handle carries its own capacity, so there is no length to mismatch.
-    fun text_input(self, x: i32, y: i32, width: i32, height: i32, text: EqoiText) -> i32:
+    fun text_input(self, x: i32, y: i32, width: i32, height: i32, text: SoorynText) -> i32:
         return self.text_input(x, y, width, height, text.ptr, text.capacity)
 
-    fun radio(self, x: i32, y: i32, label: str, index: i32, selected: EqoiInt) -> i32:
+    fun radio(self, x: i32, y: i32, label: str, index: i32, selected: SoorynInt) -> i32:
         return self.radio(x, y, label, index, selected.ptr)
 
-    fun spinner(self, x: i32, y: i32, width: i32, height: i32, min_v: i32, max_v: i32, increment: i32, value: EqoiInt) -> i32:
+    fun spinner(self, x: i32, y: i32, width: i32, height: i32, min_v: i32, max_v: i32, increment: i32, value: SoorynInt) -> i32:
         return self.spinner(x, y, width, height, min_v, max_v, increment, value.ptr)
 
-    fun tab_bar_begin(self, x: i32, y: i32, width: i32, height: i32, active: EqoiInt):
+    fun tab_bar_begin(self, x: i32, y: i32, width: i32, height: i32, active: SoorynInt):
         self.tab_bar_begin(x, y, width, height, active.ptr)
 
-    fun dropdown_begin(self, x: i32, y: i32, width: i32, height: i32, selected: EqoiInt, selected_label: str) -> i32:
+    fun dropdown_begin(self, x: i32, y: i32, width: i32, height: i32, selected: SoorynInt, selected_label: str) -> i32:
         return self.dropdown_begin(x, y, width, height, selected.ptr, selected_label)
 
-    fun scrollbar_vertical(self, x: i32, y: i32, height: i32, view_h: i32, content_h: i32, scroll: EqoiInt) -> i32:
+    fun scrollbar_vertical(self, x: i32, y: i32, height: i32, view_h: i32, content_h: i32, scroll: SoorynInt) -> i32:
         return self.scrollbar_vertical(x, y, height, view_h, content_h, scroll.ptr)
 
-    fun scrollable_begin(self, x: i32, y: i32, width: i32, height: i32, scroll: EqoiInt, content_h: i32):
+    fun scrollable_begin(self, x: i32, y: i32, width: i32, height: i32, scroll: SoorynInt, content_h: i32):
         self.scrollable_begin(x, y, width, height, scroll.ptr, content_h)
 
-    fun table_begin(self, x: i32, y: i32, width: i32, height: i32, row_height: i32, row_count: i32, scroll: EqoiInt, selected: EqoiInt) -> i32:
+    fun table_begin(self, x: i32, y: i32, width: i32, height: i32, row_height: i32, row_count: i32, scroll: SoorynInt, selected: SoorynInt) -> i32:
         return self.table_begin(x, y, width, height, row_height, row_count, scroll.ptr, selected.ptr)
 
-    fun menu_begin(self, x: i32, y: i32, width: i32, open_state: EqoiBool) -> i32:
+    fun menu_begin(self, x: i32, y: i32, width: i32, open_state: SoorynBool) -> i32:
         return self.menu_begin(x, y, width, open_state.ptr)
 
-    fun menu_backdrop(self, x: i32, y: i32, width: i32, item_count: i32, open_state: EqoiBool):
+    fun menu_backdrop(self, x: i32, y: i32, width: i32, item_count: i32, open_state: SoorynBool):
         self.menu_backdrop(x, y, width, item_count, open_state.ptr)

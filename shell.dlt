@@ -1,5 +1,5 @@
 # ============================
-#  Eqoi Application Shell
+#  Sooryn Application Shell
 # ============================
 # The furniture an application wears rather than the controls it contains: a
 # strip of closable document tabs, toolbar buttons that are an icon and a hit
@@ -10,7 +10,7 @@
 # it can be closed, a toolbar button has no label to measure, and an address
 # bar is a text field with a different silhouette.
 
-attach EqoiApp:
+attach SoorynApp:
     # ---------------------------------------------------------------
     # Text that may not fit
     # ---------------------------------------------------------------
@@ -191,7 +191,7 @@ attach EqoiApp:
         closed: i32 = 0
         if show_close == 1:
             self.push_id_int(index)
-            if self.icon_button(close_x, y + (h - close_size) / 2, close_size, EQOI_ICON_CLOSE) == 1:
+            if self.icon_button(close_x, y + (h - close_size) / 2, close_size, SOORYN_ICON_CLOSE) == 1:
                 closed = 1
             self.pop_id()
 
@@ -213,7 +213,7 @@ attach EqoiApp:
         pressed: i32 = 0
         if x + size <= self.dt_x + self.dt_w:
             self.push_id_str("newtab")
-            pressed = self.icon_button(x, self.dt_y + 5, size, EQOI_ICON_PLUS)
+            pressed = self.icon_button(x, self.dt_y + 5, size, SOORYN_ICON_PLUS)
             self.pop_id()
         self.pop_clip()
         return pressed
@@ -234,7 +234,7 @@ attach EqoiApp:
         self.field_text_inset = 0 - 1
 
         tint: UIColor = self.theme.muted_text
-        if leading == EQOI_ICON_LOCK:
+        if leading == SOORYN_ICON_LOCK:
             tint = self.theme.accent
         self.icon_glyph(leading, x + 12, y + (height - icon_size) / 2, icon_size, tint)
         return changed

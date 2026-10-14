@@ -1,5 +1,5 @@
 # ============================
-#  Eqoi Display Scale
+#  Sooryn Display Scale
 # ============================
 # An application writes one set of coordinates. A display at twice the pixel
 # density needs everything at twice the size. Reconciling those is the whole
@@ -18,7 +18,7 @@
 # can always be set outright: an application on a platform that does not yet
 # report it is not stuck.
 
-attach EqoiApp:
+attach SoorynApp:
     fun scale_percent(self) -> i32:
         return self.display_scale
 

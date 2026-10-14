@@ -1,4 +1,4 @@
-import eqoi
+import sooryn
 import fonts
 
 # Gamma-correct glyph blending.
@@ -24,7 +24,7 @@ fun load_face(size: i32) -> FontFace:
 
 # How far the frame's light strays from its background, summed. The absolute
 # value is what matters: one direction adds light and the other removes it.
-fun deviation(app: EqoiApp, width: i32, height: i32, background: i32) -> i64:
+fun deviation(app: SoorynApp, width: i32, height: i32, background: i32) -> i64:
     total: i64 = 0
     ground: i32 = ui_light_of(background)
     y: i32 = 0
@@ -49,29 +49,29 @@ fun main() -> i32:
     # The tables themselves, before anything is drawn with them.
     # ---------------------------------------------------------------
     if ui_gamma_ready() == 0:
-        print("eqoi gamma: the tables would not build")
+        print("sooryn gamma: the tables would not build")
         return 1
     if ui_light_of(0) != 0:
-        print("eqoi gamma: black is not zero light")
+        print("sooryn gamma: black is not zero light")
         return 2
     if ui_light_of(255) < 65000:
-        print("eqoi gamma: white is not full light")
+        print("sooryn gamma: white is not full light")
         return 3
     # sRGB 128 carries about 21.6% of white's light, not 50%.
     middle: i32 = ui_light_of(128)
     if middle < 13800 or middle > 14500:
-        print("eqoi gamma: the transfer curve is not sRGB")
+        print("sooryn gamma: the transfer curve is not sRGB")
         return 4
     # And half the light codes to about 188, which is the whole point.
     half: i32 = ui_code_of(32768)
     if half < 186 or half > 190:
-        print("eqoi gamma: half the light did not code back to where sRGB puts it")
+        print("sooryn gamma: half the light did not code back to where sRGB puts it")
         return 5
     # Round tripping must not drift.
     probe: i32 = 0
     while probe < 256:
         if ui_code_of(ui_light_of(probe)) != probe:
-            print("eqoi gamma: a value did not survive the round trip")
+            print("sooryn gamma: a value did not survive the round trip")
             return 6
         probe = probe + 1
 
@@ -79,9 +79,9 @@ fun main() -> i32:
     # The same glyph, both polarities, weighed.
     # ---------------------------------------------------------------
     face: FontFace = load_face(28)
-    app: EqoiApp = EqoiApp.headless(320, 60)
+    app: SoorynApp = SoorynApp.headless(320, 60)
     if app.is_valid() == 0:
-        print("eqoi gamma: headless app creation failed")
+        print("sooryn gamma: headless app creation failed")
         return 7
     if face.is_valid() == 1:
         app.use_font(face)
@@ -101,7 +101,7 @@ fun main() -> i32:
     on_light: i64 = deviation(app, 320, 60, 255)
 
     if on_dark <= 0 or on_light <= 0:
-        print("eqoi gamma: one of the two frames has no ink in it")
+        print("sooryn gamma: one of the two frames has no ink in it")
         app.destroy()
         return 8
 
@@ -114,12 +114,12 @@ fun main() -> i32:
     if on_light > larger:
         larger = on_light
     if spread * 100 > larger:
-        print("eqoi gamma: the two polarities do not carry the same ink")
+        print("sooryn gamma: the two polarities do not carry the same ink")
         app.destroy()
         return 9
 
     app.destroy()
     if face.is_valid() == 1:
         face.destroy()
-    print("eqoi gamma: ok")
+    print("sooryn gamma: ok")
     return 0

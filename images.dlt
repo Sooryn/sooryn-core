@@ -1,13 +1,13 @@
 # ============================
-#  Eqoi Images
+#  Sooryn Images
 # ============================
-# Eqoi draws a pixel buffer; it does not decode one. Decoding belongs to the
+# Sooryn draws a pixel buffer; it does not decode one. Decoding belongs to the
 # image package, which reads PNG and JPEG in pure Dolet, and keeping the two
 # apart means an application that draws no images carries no decoder, exactly
 # as an application that loads no font carries no TrueType parser.
 #
 #     picture: Image = PNG.load("logo.png")          # the image package
-#     logo: EqoiImage = app.new_image_rgba(picture.data, picture.width,
+#     logo: SoorynImage = app.new_image_rgba(picture.data, picture.width,
 #                                          picture.height, picture.stride)
 #     app.image(x, y, logo)
 #
@@ -19,23 +19,23 @@
 # A handle owns its pixels and is released with the application.
 
 @stack
-struct EqoiImage:
+struct SoorynImage:
     pixels: i64 = 0
     width: i32 = 0
     height: i32 = 0
     stride: i32 = 0
 
-attach EqoiImage:
+attach SoorynImage:
     fun is_valid(self) -> i32:
         if self.pixels == 0 or self.width <= 0 or self.height <= 0:
             return 0
         return 1
 
-attach EqoiApp:
+attach SoorynApp:
     # Take a buffer that is already in the surface's channel order. Nothing is
     # copied: the caller keeps it alive for as long as it is drawn.
-    fun borrow_image(self, pixels: i64, width: i32, height: i32, stride: i32) -> EqoiImage:
-        handle: EqoiImage = EqoiImage()
+    fun borrow_image(self, pixels: i64, width: i32, height: i32, stride: i32) -> SoorynImage:
+        handle: SoorynImage = SoorynImage()
         if pixels == 0 or width <= 0 or height <= 0:
             return handle
         handle.pixels = pixels
@@ -48,8 +48,8 @@ attach EqoiApp:
 
     # Take a buffer in the image package's order — red first — and convert it
     # once. The copy is owned by the application and released with it.
-    fun new_image_rgba(self, pixels: i64, width: i32, height: i32, stride: i32) -> EqoiImage:
-        handle: EqoiImage = EqoiImage()
+    fun new_image_rgba(self, pixels: i64, width: i32, height: i32, stride: i32) -> SoorynImage:
+        handle: SoorynImage = SoorynImage()
         if pixels == 0 or width <= 0 or height <= 0:
             return handle
         source_stride: i32 = stride
@@ -96,11 +96,11 @@ attach EqoiApp:
     # Drawing
     # ---------------------------------------------------------------
     # At its own size.
-    fun image(self, x: i32, y: i32, picture: EqoiImage):
+    fun image(self, x: i32, y: i32, picture: SoorynImage):
         self.image_scaled(x, y, picture.width, picture.height, picture, 0)
 
     # Stretched into a rectangle, sampling nearest.
-    fun image_scaled(self, x: i32, y: i32, width: i32, height: i32, picture: EqoiImage, tint: UIColor):
+    fun image_scaled(self, x: i32, y: i32, width: i32, height: i32, picture: SoorynImage, tint: UIColor):
         if picture.is_valid() == 0:
             return
         commands: UIDrawList = self.commands
@@ -110,7 +110,7 @@ attach EqoiApp:
     # Scaled to fit inside a rectangle without distorting it, and centred in
     # whatever room is left over. This is what a thumbnail wants and what
     # stretching to the rectangle gets wrong.
-    fun image_fit(self, x: i32, y: i32, width: i32, height: i32, picture: EqoiImage):
+    fun image_fit(self, x: i32, y: i32, width: i32, height: i32, picture: SoorynImage):
         if picture.is_valid() == 0:
             return
         if width <= 0 or height <= 0:
@@ -124,5 +124,5 @@ attach EqoiApp:
 
     # An icon drawn in a colour of the caller's choosing, which is how one
     # white glyph serves a whole theme.
-    fun icon(self, x: i32, y: i32, width: i32, height: i32, picture: EqoiImage, color: UIColor):
+    fun icon(self, x: i32, y: i32, width: i32, height: i32, picture: SoorynImage, color: UIColor):
         self.image_scaled(x, y, width, height, picture, color)

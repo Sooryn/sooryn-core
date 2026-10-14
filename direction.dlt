@@ -1,5 +1,5 @@
 # ============================
-#  Eqoi Reading Direction
+#  Sooryn Reading Direction
 # ============================
 # A right-to-left interface is not right-aligned text. The whole surface turns
 # over: a toolbar fills from the right, a checkbox puts its box on the right
@@ -19,61 +19,61 @@
 # The application sets it once. Layouts handed out by the app carry it, so
 # nested layouts stay consistent without the caller repeating themselves.
 
-attach EqoiApp:
+attach SoorynApp:
     fun set_direction(self, direction: i32):
         self.direction = direction
 
     fun use_rtl(self):
-        self.direction = EQOI_DIR_RTL
+        self.direction = SOORYN_DIR_RTL
 
     fun use_ltr(self):
-        self.direction = EQOI_DIR_LTR
+        self.direction = SOORYN_DIR_LTR
 
     fun is_rtl(self) -> i32:
-        if self.direction == EQOI_DIR_RTL:
+        if self.direction == SOORYN_DIR_RTL:
             return 1
         return 0
 
     # Mirror a horizontal span inside a container. The one call a widget needs
     # to put its own parts on the correct side.
     fun mirror_x(self, container_x: i32, container_width: i32, x: i32, width: i32) -> i32:
-        if self.direction == EQOI_DIR_LTR:
+        if self.direction == SOORYN_DIR_LTR:
             return x
         return container_x + container_width - (x - container_x) - width
 
     # ---------------------------------------------------------------
     # Layouts that already know the direction
     # ---------------------------------------------------------------
-    # EqoiLayout is standalone and pure, so it cannot ask an application what
+    # SoorynLayout is standalone and pure, so it cannot ask an application what
     # direction it is in. These hand out layouts already carrying it, which is
     # what keeps a nested layout from silently reverting to left-to-right.
-    fun column(self, x: i32, y: i32, width: i32, height: i32, padding: i32, gap: i32) -> EqoiLayout:
-        layout: EqoiLayout = EqoiLayout.column(x, y, width, height, padding, gap)
+    fun column(self, x: i32, y: i32, width: i32, height: i32, padding: i32, gap: i32) -> SoorynLayout:
+        layout: SoorynLayout = SoorynLayout.column(x, y, width, height, padding, gap)
         layout.set_rtl(self.is_rtl())
         return layout
 
-    fun row(self, x: i32, y: i32, width: i32, height: i32, padding: i32, gap: i32) -> EqoiLayout:
-        layout: EqoiLayout = EqoiLayout.row(x, y, width, height, padding, gap)
+    fun row(self, x: i32, y: i32, width: i32, height: i32, padding: i32, gap: i32) -> SoorynLayout:
+        layout: SoorynLayout = SoorynLayout.row(x, y, width, height, padding, gap)
         layout.set_rtl(self.is_rtl())
         return layout
 
-    fun grid(self, x: i32, y: i32, width: i32, height: i32, padding: i32, gap: i32, columns: i32) -> EqoiLayout:
-        layout: EqoiLayout = EqoiLayout.grid(x, y, width, height, padding, gap, columns)
+    fun grid(self, x: i32, y: i32, width: i32, height: i32, padding: i32, gap: i32, columns: i32) -> SoorynLayout:
+        layout: SoorynLayout = SoorynLayout.grid(x, y, width, height, padding, gap, columns)
         layout.set_rtl(self.is_rtl())
         return layout
 
-    fun column_in(self, rect: UIRect, padding: i32, gap: i32) -> EqoiLayout:
-        layout: EqoiLayout = EqoiLayout.column_in(rect, padding, gap)
+    fun column_in(self, rect: UIRect, padding: i32, gap: i32) -> SoorynLayout:
+        layout: SoorynLayout = SoorynLayout.column_in(rect, padding, gap)
         layout.set_rtl(self.is_rtl())
         return layout
 
-    fun row_in(self, rect: UIRect, padding: i32, gap: i32) -> EqoiLayout:
-        layout: EqoiLayout = EqoiLayout.row_in(rect, padding, gap)
+    fun row_in(self, rect: UIRect, padding: i32, gap: i32) -> SoorynLayout:
+        layout: SoorynLayout = SoorynLayout.row_in(rect, padding, gap)
         layout.set_rtl(self.is_rtl())
         return layout
 
-    fun grid_in(self, rect: UIRect, padding: i32, gap: i32, columns: i32) -> EqoiLayout:
-        layout: EqoiLayout = EqoiLayout.grid_in(rect, padding, gap, columns)
+    fun grid_in(self, rect: UIRect, padding: i32, gap: i32, columns: i32) -> SoorynLayout:
+        layout: SoorynLayout = SoorynLayout.grid_in(rect, padding, gap, columns)
         layout.set_rtl(self.is_rtl())
         return layout
 
