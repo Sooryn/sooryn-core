@@ -38,6 +38,15 @@ struct SoorynApp:
     physical_width: i32 = 0
     physical_height: i32 = 0
     uses_default_font: i32 = 1
+    # The default face: SOORYN_FONT_SYSTEM for windowed applications (the
+    # platform's interface typeface, as `system-ui` is on the web), and
+    # SOORYN_FONT_BUILTIN for headless ones, whose pixels must not depend on
+    # the machine running the tests. See system_font.dlt.
+    default_font_kind: i32 = 0
+    system_font_bytes: i64 = 0
+    system_font_size: i64 = 0
+    system_font_state: i32 = 0
+    system_font_path: str = ""
 
     # ---- Reading direction ----
     # Set once for the application. Layouts the app hands out carry it, and
@@ -261,6 +270,9 @@ attach SoorynApp:
         # Take whatever the platform says about the display before the first
         # frame, so an application never draws once at the wrong size.
         app.adopt_display_scale()
+        # Then the face: the platform's interface font at that size.
+        app.default_font_kind = SOORYN_FONT_SYSTEM
+        app.apply_default_font()
         return app
 
     # Offscreen twin of create(). Same surface, same command list, same frame
@@ -307,7 +319,8 @@ attach SoorynApp:
     # another face is selected. Rendering remains owned by ui.
     fun use_font(self, face: FontFace) -> i32:
         # The application owns this one, so Sooryn stops rebuilding a default
-        # at every scale change. Size it with font_pixels.
+        # at every scale change. Size it with font_pixels. use_system_font and
+        # use_builtin_font hand the choice back to Sooryn.
         self.uses_default_font = 0
         return self.surface.use_font_face(face)
 
@@ -318,6 +331,7 @@ attach SoorynApp:
         self._free_anim()
         self._free_textmap()
         self._free_toasts()
+        self._free_system_font()
         if self.commands.is_valid() == 1:
             self.commands.destroy()
         if self.surface.is_valid() == 1:

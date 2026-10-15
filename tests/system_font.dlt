@@ -1,0 +1,77 @@
+import sooryn
+
+# The default face. Windowed applications get the platform's interface font
+# (system_font.dlt); headless ones keep the built-in face so that tests do
+# not depend on the fonts a machine has. A machine with no known system font
+# still gets readable text from the built-in face.
+
+fun main() -> i32:
+    app: SoorynApp = SoorynApp.headless(400, 200)
+    if app.is_valid() == 0:
+        print("sooryn system_font: headless app creation failed")
+        return 1
+    if Memory.strlen(app.default_font_source()) != 0:
+        print("sooryn system_font: a headless app did not keep the built-in face")
+        app.destroy()
+        return 2
+    builtin_height: i32 = app.text_height()
+
+    found: i32 = app.use_system_font()
+    if found == 1:
+        source: str = app.default_font_source()
+        if Memory.strlen(source) == 0 or Str.ends_with(Str.to_lower(source), ".ttf") == false:
+            print("sooryn system_font: a system font was found but not reported")
+            app.destroy()
+            return 3
+        system_width: i32 = app.text_width("Hello, Sooryn")
+        if system_width <= 0:
+            print("sooryn system_font: the system face measures nothing")
+            app.destroy()
+            return 4
+        # A scale change rebuilds the same face at the new size, from memory.
+        height_100: i32 = app.text_height()
+        app.set_scale_percent(200)
+        if Str.equals(app.default_font_source(), source) == false:
+            print("sooryn system_font: a scale change lost the system face")
+            app.destroy()
+            return 5
+        # Logical line height stays put while the physical face doubles.
+        height_200: i32 = app.text_height()
+        if height_200 * 10 < height_100 * 9 or height_200 * 9 > height_100 * 10:
+            print("sooryn system_font: the system face did not scale with the display")
+            app.destroy()
+            return 6
+        app.set_scale_percent(100)
+        # Text drawn in it reaches the surface.
+        drew: i32 = 0
+        if app.begin_offscreen() == 1:
+            app.label(10, 10, "Sooryn")
+            app.end()
+        y: i32 = 10
+        while y < 40:
+            x: i32 = 10
+            while x < 80:
+                if app.pixel_at(x, y) != app.pixel_at(300, 150):
+                    drew = 1
+                x = x + 1
+            y = y + 1
+        if drew == 0:
+            print("sooryn system_font: text in the system face drew nothing")
+            app.destroy()
+            return 7
+    else:
+        # No known font on this machine: the built-in face stays in charge.
+        if Memory.strlen(app.default_font_source()) != 0 or app.text_height() != builtin_height:
+            print("sooryn system_font: a machine without system fonts lost the built-in face")
+            app.destroy()
+            return 8
+
+    # The built-in face can always be chosen again.
+    app.use_builtin_font()
+    if Memory.strlen(app.default_font_source()) != 0 or app.text_height() != builtin_height:
+        print("sooryn system_font: use_builtin_font did not restore the built-in face")
+        app.destroy()
+        return 9
+    app.destroy()
+    print("sooryn system_font: ok")
+    return 0

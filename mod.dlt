@@ -9,6 +9,7 @@ import input
 import fonts
 import text
 import unicode
+import dpk
 
 type UIColor = i32
 
@@ -18,6 +19,7 @@ load sooryn/app
 load sooryn/identity
 load sooryn/direction
 load sooryn/scale
+load sooryn/system_font
 load sooryn/focus
 load sooryn/textedit
 load sooryn/textmap
@@ -34,6 +36,9 @@ load sooryn/headless
 export SoorynTheme
 export SoorynLayout
 export SoorynApp
+export SOORYN_FONT_SYSTEM
+export SOORYN_FONT_BUILTIN
+export SOORYN_DEFAULT_TEXT_SIZE
 export SoorynInt
 export SoorynBool
 export SoorynText

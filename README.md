@@ -116,8 +116,29 @@ tooltips remain correct when the font face or pixel size changes. Coverage-font
 text and anti-aliased primitives are rasterized by `ui`; Sooryn stays focused on
 native application behavior and component composition.
 
+### The default face
+
+A window opened with `SoorynApp.create` draws in the platform's interface
+typeface, the way a web page with no font named draws in `system-ui`:
+
+- Windows: Segoe UI, then Tahoma, then Arial, from the Windows fonts folder.
+- Linux: Noto Sans, then DejaVu Sans, Ubuntu, Liberation Sans and FreeSans
+  from the usual system font folders.
+
+The file is read once and the face is rebuilt from memory at every display
+scale. A machine with none of them falls back to the built-in face, so text
+always draws. `app.default_font_source()` says which file is in use (empty for
+the built-in face).
+
+Headless applications keep the built-in face by default, because tests compare
+pixels and widths and those must not depend on the fonts a machine has
+installed. `app.use_system_font()` opts one in, and `app.use_builtin_font()`
+selects the built-in face for any application.
+
+### Your own face
+
 An application may create a face with the independent `fonts` package and pass
-it to `app.use_font(face)`. Sooryn borrows the atlas, so the application keeps the
+it to `app.use_font(face)`, which takes precedence over the default. Sooryn borrows the atlas, so the application keeps the
 face alive and destroys it after `app.destroy()`; switching faces does not copy
 glyph pixels or add per-frame rasterization.
 
@@ -256,7 +277,9 @@ so Arabic goes through labels, buttons, table cells and text fields the same
 way Latin does. Mixed content orders correctly too: numbers inside an Arabic
 line still read left to right.
 
-Sooryn's built-in face covers ASCII, so drawing Arabic needs a face that has it:
+The built-in face covers ASCII. The default system face draws Arabic where the
+platform's interface font has it (Segoe UI and Tahoma do), and an application
+can always choose a face that has it:
 
 ```dolet
 face: FontFace = font_face_load_ttf("assets/fonts/arabic.ttf", 22)
@@ -288,8 +311,9 @@ face: FontFace = font_face_load_ttf(path, app.font_pixels(16))
   physical size. Without that every centred label would drift by half the
   scale factor.
 - A one-pixel border never rounds away to nothing at a fractional scale.
-- The built-in face is rebuilt at the new size. An application that supplied
-  its own face sizes it with `font_pixels`, and Sooryn stops rebuilding.
+- The default face, system or built-in, is rebuilt at the new size. An
+  application that supplied its own face sizes it with `font_pixels`, and
+  Sooryn stops rebuilding.
 
 **Where it comes from.** Windows reports the display's dots per inch and Sooryn
 adopts it before the first frame. The Linux backend does not yet listen for
