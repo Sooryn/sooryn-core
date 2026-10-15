@@ -115,6 +115,31 @@ fun main() -> i32:
         return 16
 
     # ---------------------------------------------------------------
+    # Overflow. Rows asked for at a fixed size keep it past the end of the
+    # container, one after another, instead of being squeezed into what is
+    # left and stacking on each other. The container's clip cuts them.
+    # ---------------------------------------------------------------
+    full: SoorynLayout = SoorynLayout.column(0, 0, 200, 100, 0, 0)
+    row_top: i32 = -1
+    row_index: i32 = 0
+    while row_index < 5:
+        row: UIRect = full.next(0, 30)
+        if row.bottom - row.top != 30:
+            print("sooryn layout: a row past the end of its container was squeezed")
+            return 40
+        if row.top != row_index * 30 or row.top <= row_top:
+            print("sooryn layout: overflowing rows did not follow each other")
+            return 41
+        row_top = row.top
+        row_index = row_index + 1
+    rest: SoorynLayout = SoorynLayout.column(0, 0, 200, 100, 0, 0)
+    rest.next(0, 30)
+    fill: UIRect = rest.next(0, 0)
+    if fill.bottom - fill.top != 70:
+        print("sooryn layout: an item asking for no size did not take what was left")
+        return 42
+
+    # ---------------------------------------------------------------
     # Wrapping. The item that does not fit starts the next line at its
     # full size rather than being squeezed into what was left.
     # ---------------------------------------------------------------

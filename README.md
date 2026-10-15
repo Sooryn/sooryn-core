@@ -78,6 +78,11 @@ end-aligned along the main axis.
 slot. `limits(min, max)` clamps each item's main-axis size, with a maximum of
 0 meaning unbounded.
 
+**Overflow.** An item that asks for a main-axis size gets it, even past the
+end of the container: it overflows and the container's clip cuts it, as in
+CSS. Rows are never squeezed into what is left, so a full panel can never
+stack its last lines on top of each other.
+
 **Wrapping.** `wrap(1)` moves to a new line (row) or column (column) when an
 item does not fit. The item that did not fit starts the new line at its full
 size rather than being squeezed into what was left.
@@ -89,6 +94,11 @@ row starts a new one.
 
 **Nesting.** `column_in(rect, padding, gap)`, `row_in`, and `grid_in` build a
 child layout inside a rectangle a parent produced.
+
+**Sizing rows from the face.** Text rows should come from the face in use,
+not from a number measured for one font: `app.text_height()` is a line of
+text, and `app.title_height()` is a heading with its accent rule. `title()`
+draws that rule a fixed gap under the line, as wide as the words.
 
 ```dolet
 slot: UIRect = page.next(0, 100)

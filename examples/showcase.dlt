@@ -63,8 +63,10 @@ fun main() -> i32:
             content_w: i32 = screen_w - margin * 2
             if content_w < 620:
                 content_w = 620
-            if content_h < 430:
-                content_h = 430
+            # Never taller than the window: content that does not fit is cut by
+            # its panel's clip instead of running under the status line.
+            if content_h < 160:
+                content_h = 160
 
             # Header and global theme switch.
             app.panel(margin, margin, content_w, header_h)
@@ -255,7 +257,7 @@ fun main() -> i32:
                 app.secondary_button(margin + 218, content_y + 318, 180, 42, "Secondary action")
                 app.panel_end()
 
-            app.muted_label(margin, screen_h - footer_h, "Resize the window and interact with every page | Sooryn 0.7.0")
+            app.muted_label(margin, screen_h - footer_h, "Resize the window and interact with every page")
 
             # Modal is recorded last so it is always above the page content.
             if app.get_bool(modal_open) == 1:

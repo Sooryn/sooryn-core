@@ -33,11 +33,22 @@ attach SoorynApp:
     fun muted_label(self, x: i32, y: i32, value: str):
         self.text(x, y, value, self.theme.muted_text)
 
+    # A heading with an accent rule under it. The rule sits a fixed gap below
+    # the face's line and is as wide as the words, so it follows whatever
+    # face and size is in use instead of a height measured for one font.
     fun title(self, x: i32, y: i32, value: str):
         commands: UIDrawList = self.commands
         commands.push_text(x, y, value, self.theme.text)
-        commands.push_line(x, y + 24, x + 260, y + 24, self.theme.accent, 2)
+        rule_y: i32 = y + self.text_height() + SOORYN_TITLE_GAP
+        rule_w: i32 = self.text_width(value)
+        if rule_w < SOORYN_TITLE_MIN_RULE:
+            rule_w = SOORYN_TITLE_MIN_RULE
+        commands.push_line(x, rule_y, x + rule_w, rule_y, self.theme.accent, SOORYN_TITLE_RULE)
         self.push_commands(commands)
+
+    # The height a title takes, rule included: what a layout reserves for it.
+    fun title_height(self) -> i32:
+        return self.text_height() + SOORYN_TITLE_GAP + SOORYN_TITLE_RULE
 
     fun panel(self, x: i32, y: i32, width: i32, height: i32):
         commands: UIDrawList = self.commands

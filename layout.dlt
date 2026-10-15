@@ -291,11 +291,16 @@ attach SoorynLayout:
             if main_size + slot_extra > self.remaining_main():
                 self.new_line()
 
+        # An item that asks for a size gets it, even past the end of the
+        # container: it overflows and the container's clip cuts it, as in
+        # CSS. Squeezing it into what is left stacked the last rows of a full
+        # panel on top of each other until they had no height at all. An
+        # item that asks for nothing (0) takes what is left.
         main: i32 = main_size
         available: i32 = self.remaining_main() - slot_extra
         if available < 0:
             available = 0
-        if main <= 0 or main > available:
+        if main <= 0:
             main = available
         if self.min_main > 0 and main < self.min_main:
             main = self.min_main

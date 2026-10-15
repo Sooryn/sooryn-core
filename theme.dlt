@@ -2,6 +2,12 @@
 #  Sooryn Theme
 # ============================
 
+# Title metrics, in logical units: the gap between a heading's line and its
+# accent rule, the rule's thickness, and the shortest rule drawn.
+SOORYN_TITLE_GAP: i32 = 4
+SOORYN_TITLE_RULE: i32 = 2
+SOORYN_TITLE_MIN_RULE: i32 = 24
+
 struct SoorynTheme:
     background: UIColor = 0
     surface: UIColor = 0

@@ -13,6 +13,8 @@ STATUS_H: i32 = 30
 TABLE_ROWS: i32 = 5000
 
 fun page_controls(app: SoorynApp, area: UIRect, checks: i64, notify: i64, autosave: i64, volume: i64, progress: i64, clicks: i64, mode: i64, modal: i64):
+    # One row per line of text, in whatever face is in use.
+    line: i32 = app.text_height() + 4
     columns: SoorynLayout = SoorynLayout.row_in(area, 16, 16)
     columns.flex_even(2)
     left: UIRect = columns.next_flex(1)
@@ -21,7 +23,7 @@ fun page_controls(app: SoorynApp, area: UIRect, checks: i64, notify: i64, autosa
     # ---- left column ----
     app.panel_begin(left.left, left.top, left.right - left.left, left.bottom - left.top)
     l: SoorynLayout = SoorynLayout.column_in(left, 18, 14)
-    app.title(l.next(0, 24).left, left.top + 18, "Controls")
+    app.title(l.next(0, app.title_height()).left, l.cursor_y - app.title_height(), "Controls")
     l.skip(6)
 
     row: UIRect = l.next(0, 40)
@@ -45,11 +47,11 @@ fun page_controls(app: SoorynApp, area: UIRect, checks: i64, notify: i64, autosa
     app.toggle(toggles2.left, toggles2.top, "Autosave", autosave)
 
     l.skip(4)
-    app.muted_label(l.next(0, 18).left, l.cursor_y - 18, "Volume")
+    app.muted_label(l.next(0, line).left, l.cursor_y - line, "Volume")
     slider_rect: UIRect = l.next(0, 24)
     app.slider(slider_rect.left, slider_rect.top, slider_rect.right - slider_rect.left, 0, 100, volume)
 
-    app.muted_label(l.next(0, 18).left, l.cursor_y - 18, "Progress")
+    app.muted_label(l.next(0, line).left, l.cursor_y - line, "Progress")
     bar: UIRect = l.next(0, 18)
     app.progress_bar(bar.left, bar.top, bar.right - bar.left, 14, app.get_int(progress))
     app.panel_end()
@@ -57,10 +59,10 @@ fun page_controls(app: SoorynApp, area: UIRect, checks: i64, notify: i64, autosa
     # ---- right column ----
     app.panel_begin(right.left, right.top, right.right - right.left, right.bottom - right.top)
     r: SoorynLayout = SoorynLayout.column_in(right, 18, 14)
-    app.title(r.next(0, 24).left, right.top + 18, "More")
+    app.title(r.next(0, app.title_height()).left, r.cursor_y - app.title_height(), "More")
     r.skip(6)
 
-    app.muted_label(r.next(0, 18).left, r.cursor_y - 18, "Quality")
+    app.muted_label(r.next(0, line).left, r.cursor_y - line, "Quality")
     dd: UIRect = r.next(0, 30)
     label: str = "Balanced"
     picked: i32 = app.get_int(mode)
@@ -78,10 +80,10 @@ fun page_controls(app: SoorynApp, area: UIRect, checks: i64, notify: i64, autosa
     app.separator(r.next(0, 1).left, r.cursor_y - 1, right.right - right.left - 36)
     r.skip(4)
 
-    app.muted_label(r.next(0, 18).left, r.cursor_y - 18, "Keyboard")
-    app.label(r.next(0, 18).left, r.cursor_y - 18, "Tab / Shift+Tab move focus")
-    app.label(r.next(0, 18).left, r.cursor_y - 18, "Enter fires the focused control")
-    app.label(r.next(0, 18).left, r.cursor_y - 18, "Left / Right move a focused slider")
+    app.muted_label(r.next(0, line).left, r.cursor_y - line, "Keyboard")
+    app.label(r.next(0, line).left, r.cursor_y - line, "Tab / Shift+Tab move focus")
+    app.label(r.next(0, line).left, r.cursor_y - line, "Enter fires the focused control")
+    app.label(r.next(0, line).left, r.cursor_y - line, "Left / Right move a focused slider")
 
     r.skip(6)
     dialog: UIRect = r.next(0, 36)
@@ -93,7 +95,7 @@ fun page_layout(app: SoorynApp, area: UIRect):
     page: SoorynLayout = SoorynLayout.column_in(area, 16, 14)
 
     # Flexible weights, drawn as the bars they produce.
-    app.title(page.next(0, 22).left, page.cursor_y - 22, "Flex weights 1 : 2 : 1")
+    app.title(page.next(0, app.title_height()).left, page.cursor_y - app.title_height(), "Flex weights 1 : 2 : 1")
     weights: UIRect = page.next(0, 40)
     bars: SoorynLayout = SoorynLayout.row_in(weights, 0, 8)
     bars.flex(4, 3)
@@ -105,7 +107,7 @@ fun page_layout(app: SoorynApp, area: UIRect):
     app.rect(three.left, three.top, three.right - three.left, 40, app.theme.accent)
 
     # Cross-axis alignment.
-    app.title(page.next(0, 22).left, page.cursor_y - 22, "Cross-axis alignment")
+    app.title(page.next(0, app.title_height()).left, page.cursor_y - app.title_height(), "Cross-axis alignment")
     aligned: UIRect = page.next(0, 76)
     app.outline(aligned.left, aligned.top, aligned.right - aligned.left, 76, app.theme.border)
     lanes: SoorynLayout = SoorynLayout.row_in(aligned, 8, 8)
@@ -121,7 +123,7 @@ fun page_layout(app: SoorynApp, area: UIRect):
     app.muted_label(aligned.left, aligned.bottom + 2, "start        center        end        stretch")
 
     # A grid with a spanning cell.
-    app.title(page.next(0, 22).left, page.cursor_y + 4, "Grid, 4 columns, one cell spanning 2")
+    app.title(page.next(0, app.title_height()).left, page.cursor_y - app.title_height(), "Grid, 4 columns, one cell spanning 2")
     page.skip(4)
     grid_area: UIRect = page.next(0, 0)
     g: SoorynLayout = SoorynLayout.grid_in(grid_area, 0, 8, 4)
@@ -139,10 +141,12 @@ fun page_layout(app: SoorynApp, area: UIRect):
         i = i + 1
 
 fun page_table(app: SoorynApp, area: UIRect, scroll: i64, selected: i64, sort_col: i64):
+    # One row per line of text, in whatever face is in use.
+    line: i32 = app.text_height() + 4
     page: SoorynLayout = SoorynLayout.column_in(area, 16, 10)
     chosen: i32 = app.get_int(selected)
     total: i32 = TABLE_ROWS
-    app.muted_label(page.next(0, 18).left, page.cursor_y - 18, @"{total} rows. Only the visible ones are built. Selected: {chosen}")
+    app.muted_label(page.next(0, line).left, page.cursor_y - line, @"{total} rows. Only the visible ones are built. Selected: {chosen}")
 
     body: UIRect = page.next(0, 0)
     app.table_begin(body.left, body.top, body.right - body.left, body.bottom - body.top, 26, TABLE_ROWS, scroll, selected)
@@ -164,17 +168,19 @@ fun page_table(app: SoorynApp, area: UIRect, scroll: i64, selected: i64, sort_co
     app.table_end()
 
 fun page_text(app: SoorynApp, area: UIRect, name: i64, note: i64):
+    # One row per line of text, in whatever face is in use.
+    line: i32 = app.text_height() + 4
     page: SoorynLayout = SoorynLayout.column_in(area, 16, 12)
-    app.title(page.next(0, 24).left, page.cursor_y - 24, "Text editing")
-    app.muted_label(page.next(0, 18).left, page.cursor_y - 18, "Click to place the caret. Drag to select. Shift+arrows extend.")
-    app.muted_label(page.next(0, 18).left, page.cursor_y - 18, "Home / End jump. Ctrl+A selects all. Backspace and Delete respect the selection.")
+    app.title(page.next(0, app.title_height()).left, page.cursor_y - app.title_height(), "Text editing")
+    app.muted_label(page.next(0, line).left, page.cursor_y - line, "Click to place the caret. Drag to select. Shift+arrows extend.")
+    app.muted_label(page.next(0, line).left, page.cursor_y - line, "Home / End jump. Ctrl+A selects all. Backspace and Delete respect the selection.")
     page.skip(6)
 
-    app.label(page.next(0, 18).left, page.cursor_y - 18, "Name")
+    app.label(page.next(0, line).left, page.cursor_y - line, "Name")
     first: UIRect = page.next(0, 32)
     app.text_input(first.left, first.top, 420, 32, name, 47)
 
-    app.label(page.next(0, 18).left, page.cursor_y + 2, "Note")
+    app.label(page.next(0, line).left, page.cursor_y - line, "Note")
     page.skip(2)
     second: UIRect = page.next(0, 32)
     app.text_input(second.left, second.top, 420, 32, note, 63)
@@ -182,14 +188,13 @@ fun page_text(app: SoorynApp, area: UIRect, name: i64, note: i64):
     page.skip(10)
     app.separator(page.next(0, 1).left, page.cursor_y - 1, area.right - area.left - 32)
     page.skip(6)
-    app.title(page.next(0, 22).left, page.cursor_y - 22, "About the font")
-    app.label(page.next(0, 18).left, page.cursor_y - 18, "This gallery loads nothing from disk. The face comes from the")
-    app.label(page.next(0, 18).left, page.cursor_y - 18, "fonts package and ui installs it automatically, so a bare build")
-    app.label(page.next(0, 18).left, page.cursor_y - 18, "still draws text.")
+    app.title(page.next(0, app.title_height()).left, page.cursor_y - app.title_height(), "About the font")
+    app.label(page.next(0, line).left, page.cursor_y - line, "This gallery loads no font of its own. Its text is the platform's")
+    app.label(page.next(0, line).left, page.cursor_y - line, "interface font, found the way a browser finds system-ui; a machine")
+    app.label(page.next(0, line).left, page.cursor_y - line, "without one still draws text in the built-in face.")
     page.skip(4)
-    app.muted_label(page.next(0, 18).left, page.cursor_y - 18, "That built-in face covers ASCII 32..126 only. Arabic shaping is")
-    app.muted_label(page.next(0, 18).left, page.cursor_y - 18, "implemented in the text package and tested, but drawing it needs")
-    app.muted_label(page.next(0, 18).left, page.cursor_y - 18, "a face with Arabic glyphs, loaded through app.use_font.")
+    app.muted_label(page.next(0, line).left, page.cursor_y - line, "Arabic is shaped by the text package and draws in any face that has")
+    app.muted_label(page.next(0, line).left, page.cursor_y - line, "it: Segoe UI and Tahoma do. app.use_font picks a face of your own.")
 
 # A pixel is written here the way the image package writes one - red in the
 # low byte - so the conversion below is exactly the one a decoded PNG goes
