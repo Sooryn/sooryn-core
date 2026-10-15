@@ -134,6 +134,51 @@ fun main() -> i32:
     a.inject_left_up()
 
     # ---------------------------------------------------------------
+    # Clips scale exactly like the shapes they cut, at a fractional scale.
+    # At 125%, logical x 200 is physical 250. A clip that was scaled twice
+    # starts at 312 and cuts away the left of every panel not at the
+    # origin; one intersected in mixed units drifts the other way.
+    # ---------------------------------------------------------------
+    c: SoorynApp = SoorynApp.headless(800, 600)
+    c.set_scale_percent(125)
+    if c.begin_offscreen() == 1:
+        c.push_clip(200, 40, 160, 100)
+        c.rect(0, 0, 640, 480, c.theme.accent)
+        c.pop_clip()
+        c.end()
+    # Clip is logical 200..360 x 40..140, physical 250..450 x 50..175.
+    if c.pixel_at(252, 100) != c.theme.accent:
+        print("sooryn scale: a clip at a fractional scale cut away its own left edge")
+        c.destroy()
+        return 25
+    if c.pixel_at(247, 100) == c.theme.accent:
+        print("sooryn scale: a clip let paint through left of its edge")
+        c.destroy()
+        return 26
+    if c.pixel_at(448, 172) != c.theme.accent or c.pixel_at(452, 100) == c.theme.accent or c.pixel_at(300, 177) == c.theme.accent:
+        print("sooryn scale: a clip's right or bottom edge is not where its rectangle's would be")
+        c.destroy()
+        return 27
+    # Nested: the inner clip asks for 150..250 x 60..260 and is cut to the
+    # outer one, logical 200..250 x 60..140, physical 250..313 x 75..175.
+    if c.begin_offscreen() == 1:
+        c.push_clip(200, 40, 160, 100)
+        c.push_clip(150, 60, 100, 200)
+        c.rect(0, 0, 640, 480, c.theme.accent)
+        c.pop_clip()
+        c.pop_clip()
+        c.end()
+    if c.pixel_at(260, 100) != c.theme.accent or c.pixel_at(311, 173) != c.theme.accent:
+        print("sooryn scale: a nested clip lost part of its intersection")
+        c.destroy()
+        return 28
+    if c.pixel_at(247, 100) == c.theme.accent or c.pixel_at(316, 100) == c.theme.accent or c.pixel_at(260, 72) == c.theme.accent or c.pixel_at(260, 178) == c.theme.accent:
+        print("sooryn scale: a nested clip reached past its intersection")
+        c.destroy()
+        return 29
+    c.destroy()
+
+    # ---------------------------------------------------------------
     # Going back restores everything.
     # ---------------------------------------------------------------
     a.set_scale_percent(100)
