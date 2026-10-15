@@ -20,6 +20,7 @@ load sooryn/identity
 load sooryn/direction
 load sooryn/scale
 load sooryn/system_font
+load sooryn/frames
 load sooryn/focus
 load sooryn/textedit
 load sooryn/textmap

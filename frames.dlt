@@ -1,0 +1,79 @@
+# ============================
+#  Sooryn Frame Reuse
+# ============================
+# A browser does not repaint a page that did not change, and neither does
+# Sooryn. Every frame the application describes itself as a list of draw
+# commands. When that list is identical to the previous frame's, and nothing
+# outside it changed, the surface already holds exactly the pixels the
+# renderer would produce: rendering again is pure cost (milliseconds of
+# software rasterization at desktop sizes). The frame is still presented,
+# because the window system may need its contents redrawn.
+#
+# What the list does not capture is part of the signature too: the surface
+# size, the face text is drawn in and its size. A frame that draws an image
+# is always rendered, because a borrowed image's pixels can change in place
+# without any command changing. An application that draws on the surface by
+# other means calls invalidate().
+
+attach SoorynApp:
+    # Render the next frame even if its commands match the last one.
+    fun invalidate(self):
+        self.frame_force_render = 1
+
+    # Turn frame reuse off (1 = reuse identical frames, the default).
+    fun set_frame_reuse(self, enabled: i32):
+        self.frame_reuse = enabled
+        self.frame_force_render = 1
+
+    fun frames_rendered(self) -> i64:
+        return self.frame_rendered_count
+
+    fun frames_reused(self) -> i64:
+        return self.frame_reused_count
+
+    # XXH64 over everything that decides the frame's pixels.
+    fun frame_signature(self) -> i64:
+        list: UIDrawList = self.commands
+        count: i64 = list.count as i64
+        bytes4: i64 = count * 4
+        key: u64 = dpk_xxh64(list.kinds, bytes4, count as u64)
+        key = dpk_hash_combine(key, dpk_xxh64(list.xs, bytes4, 1))
+        key = dpk_hash_combine(key, dpk_xxh64(list.ys, bytes4, 2))
+        key = dpk_hash_combine(key, dpk_xxh64(list.widths, bytes4, 3))
+        key = dpk_hash_combine(key, dpk_xxh64(list.heights, bytes4, 4))
+        key = dpk_hash_combine(key, dpk_xxh64(list.x2s, bytes4, 5))
+        key = dpk_hash_combine(key, dpk_xxh64(list.y2s, bytes4, 6))
+        key = dpk_hash_combine(key, dpk_xxh64(list.colors, bytes4, 7))
+        key = dpk_hash_combine(key, dpk_xxh64(list.backgrounds, bytes4, 8))
+        key = dpk_hash_combine(key, dpk_xxh64(list.thicknesses, bytes4, 9))
+        key = dpk_hash_combine(key, dpk_xxh64(list.texts, count * 8, 10))
+        key = dpk_hash_combine(key, dpk_xxh64(list.text_data, list.text_used, 11))
+        key = dpk_hash_combine(key, self.surface.width as u64)
+        key = dpk_hash_combine(key, self.surface.height as u64)
+        key = dpk_hash_combine(key, self.surface.font as u64)
+        key = dpk_hash_combine(key, self.surface.font_line_height as u64)
+        return key as i64
+
+    fun frame_draws_image(self) -> i32:
+        list: UIDrawList = self.commands
+        i: i32 = 0
+        while i < list.count:
+            if Memory.read_i32(list.kinds + (i as i64) * 4) == UI_CMD_IMAGE:
+                return 1
+            i = i + 1
+        return 0
+
+    # Whether this frame's commands have to be rasterized.
+    fun frame_needs_render(self) -> i32:
+        signature: i64 = self.frame_signature()
+        needed: i32 = 0
+        if self.frame_reuse == 0 or self.frame_force_render == 1 or self.frame_has_signature == 0:
+            needed = 1
+        elif signature != self.frame_last_signature:
+            needed = 1
+        elif self.frame_draws_image() == 1:
+            needed = 1
+        self.frame_last_signature = signature
+        self.frame_has_signature = 1
+        self.frame_force_render = 0
+        return needed

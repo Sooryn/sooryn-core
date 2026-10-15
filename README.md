@@ -289,6 +289,25 @@ app.use_font(face)
 `examples/arabic.dlt` is a working application that does exactly this and
 prepares nothing itself.
 
+## Frame reuse
+
+A browser does not repaint a page that did not change, and neither does
+Sooryn. Each frame the application describes itself as draw commands; when
+they match the previous frame exactly, and the surface size and the face did
+not change, the surface already holds the right pixels and the frame is
+presented without being rasterized again. An idle window, or one that only
+receives pointer moves over nothing that reacts, costs almost nothing.
+
+- A frame that draws an image always renders: a borrowed image's pixels can
+  change in place without any command changing.
+- `app.invalidate()` forces the next frame, for an application that draws on
+  the surface by other means.
+- `app.set_frame_reuse(0)` turns reuse off; `app.frames_rendered()` and
+  `app.frames_reused()` report what happened.
+
+`tests/frames.dlt` checks that a reused frame is pixel-identical to a fresh
+render and that every kind of change still renders.
+
 ## Display scale
 
 An application writes one set of coordinates. A denser display needs

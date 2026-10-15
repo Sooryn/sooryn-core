@@ -48,6 +48,14 @@ struct SoorynApp:
     system_font_state: i32 = 0
     system_font_path: str = ""
 
+    # ---- Frame reuse (see frames.dlt) ----
+    frame_reuse: i32 = 1
+    frame_force_render: i32 = 1
+    frame_has_signature: i32 = 0
+    frame_last_signature: i64 = 0
+    frame_rendered_count: i64 = 0
+    frame_reused_count: i64 = 0
+
     # ---- Reading direction ----
     # Set once for the application. Layouts the app hands out carry it, and
     # widgets that have a side — a checkbox box, a scrollbar, a chevron —
@@ -423,7 +431,11 @@ attach SoorynApp:
         self.resolve_focus_move()
         canvas: DrawCanvas = self.surface.canvas()
         if canvas.is_valid() == 1:
-            self.commands.render(canvas)
+            if self.frame_needs_render() == 1:
+                self.commands.render(canvas)
+                self.frame_rendered_count = self.frame_rendered_count + 1
+            else:
+                self.frame_reused_count = self.frame_reused_count + 1
             if self.is_headless == 0:
                 window_present_framebuffer(self.window_handle, self.surface.pixels, self.surface.width, self.surface.height, self.surface.pitch)
 

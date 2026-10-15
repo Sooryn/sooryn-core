@@ -1,0 +1,108 @@
+import sooryn
+
+# Frame reuse (frames.dlt): a frame whose commands match the previous one is
+# not rasterized again, and the pixels on the surface are exactly what a
+# fresh render would have produced. Anything that changes the picture without
+# changing a command (an image, the face) still renders.
+
+g_color: i32 = 0
+
+fun page(app: SoorynApp):
+    app.panel(10, 10, 200, 120)
+    app.label(24, 24, "Reuse me")
+    app.button(24, 60, 120, 32, "OK")
+    app.rect(160, 90, 30, 20, g_color)
+
+fun frame(app: SoorynApp):
+    if app.begin_offscreen() == 1:
+        page(app)
+        app.end()
+
+fun same_pixels(a: SoorynApp, b: SoorynApp) -> i32:
+    y: i32 = 0
+    while y < 160:
+        x: i32 = 0
+        while x < 240:
+            if a.pixel_at(x, y) != b.pixel_at(x, y):
+                return 0
+            x = x + 1
+        y = y + 1
+    return 1
+
+fun main() -> i32:
+    app: SoorynApp = SoorynApp.headless(240, 160)
+    fresh: SoorynApp = SoorynApp.headless(240, 160)
+    fresh.set_frame_reuse(0)
+    g_color = app.theme.accent
+
+    frame(app)
+    frame(app)
+    frame(app)
+    if app.frames_rendered() != 1 or app.frames_reused() != 2:
+        print("sooryn frames: identical frames were rendered again")
+        return 1
+    frame(fresh)
+    if same_pixels(app, fresh) == 0:
+        print("sooryn frames: a reused frame differs from a fresh render")
+        return 2
+
+    # One changed command renders, and the result matches a fresh render.
+    g_color = app.theme.text
+    frame(app)
+    if app.frames_rendered() != 2:
+        print("sooryn frames: a changed frame was not rendered")
+        return 3
+    frame(fresh)
+    if same_pixels(app, fresh) == 0:
+        print("sooryn frames: a changed frame differs from a fresh render")
+        return 4
+
+    # invalidate() forces the next frame.
+    app.invalidate()
+    frame(app)
+    if app.frames_rendered() != 3:
+        print("sooryn frames: invalidate did not force a render")
+        return 5
+
+    # A different face changes pixels without changing a command.
+    if app.use_system_font() == 1:
+        frame(app)
+        if app.frames_rendered() != 4:
+            print("sooryn frames: a new face did not force a render")
+            return 6
+        app.use_builtin_font()
+        frame(app)
+        if app.frames_rendered() != 5:
+            print("sooryn frames: going back to the built-in face did not render")
+            return 7
+
+    # Frames that draw an image always render: borrowed pixels can change in
+    # place with no command changing.
+    pixels: i64 = Memory.malloc_zeroed(16 * 16 * 4)
+    picture: SoorynImage = app.borrow_image(pixels, 16, 16, 64)
+    before: i64 = app.frames_rendered()
+    n: i32 = 0
+    while n < 3:
+        if app.begin_offscreen() == 1:
+            page(app)
+            app.image(200, 20, picture)
+            app.end()
+        n = n + 1
+    if app.frames_rendered() != before + 3:
+        print("sooryn frames: a frame with an image was reused")
+        return 8
+
+    # Reuse can be turned off.
+    app.set_frame_reuse(0)
+    before = app.frames_rendered()
+    frame(app)
+    frame(app)
+    if app.frames_rendered() != before + 2:
+        print("sooryn frames: reuse stayed on after being turned off")
+        return 9
+
+    Memory.free(pixels)
+    app.destroy()
+    fresh.destroy()
+    print("sooryn frames: ok")
+    return 0
