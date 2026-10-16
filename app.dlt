@@ -245,15 +245,23 @@ attach SoorynApp:
         app: SoorynApp = SoorynApp()
         app.use_dark_theme()
 
+        # width and height are the client area in logical units (window 2.0):
+        # at 125% a 1120 x 700 request opens 1400 x 875 pixels, as a browser
+        # would. The surface is made at the pixels the window actually has.
         if Window.open(title, width, height) == 0:
             return app
+        pixel_w: i32 = Window.width()
+        pixel_h: i32 = Window.height()
+        if pixel_w <= 0 or pixel_h <= 0:
+            pixel_w = width
+            pixel_h = height
 
         commands: UIDrawList = ui_draw_list_create(1024)
         if commands.is_valid() == 0:
             Window.shutdown()
             return app
 
-        surface: UISurface = ui_surface_create(width, height)
+        surface: UISurface = ui_surface_create(pixel_w, pixel_h)
         if surface.is_valid() == 0:
             commands.destroy()
             Window.shutdown()
@@ -265,8 +273,8 @@ attach SoorynApp:
         app.window_resized = 0
         app.window_focused = 1
         app.window_surface = 0
-        app.physical_width = width
-        app.physical_height = height
+        app.physical_width = pixel_w
+        app.physical_height = pixel_h
         app.width = width
         app.height = height
         app.canvas_w = width
@@ -275,9 +283,10 @@ attach SoorynApp:
         app.commands = commands
         app.surface = surface
         app.input_state = ui_input_create()
-        # Take whatever the platform says about the display before the first
-        # frame, so an application never draws once at the wrong size.
+        # Take the display's scale before the first frame: the logical size
+        # then comes back as exactly the size the application asked for.
         app.adopt_display_scale()
+        app.sync_logical_size()
         # Then the face: the platform's interface font at that size.
         app.default_font_kind = SOORYN_FONT_SYSTEM
         app.apply_default_font()

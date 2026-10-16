@@ -344,6 +344,13 @@ face: FontFace = font_face_load_ttf(path, app.font_pixels(16))
   application that supplied its own face sizes it with `font_pixels`, and
   Sooryn stops rebuilding.
 
+**The window's size.** `SoorynApp.create(title, w, h)` asks for a client
+area of `w` x `h` **logical** units, as a page asks for CSS pixels: at 125% a
+1120 x 700 window opens at 1400 x 875 pixels, and `app.width`/`app.height` are
+1120 x 700 from the first frame. The surface is made at the pixels the window
+actually has (window 2.0 sizes the client area and keeps it inside the
+display's work area).
+
 **Where it comes from.** Windows reports the display's dots per inch and Sooryn
 adopts it before the first frame. The Linux backend does not yet listen for
 the Wayland output scale or read Xft.dpi, so it reports one to one rather

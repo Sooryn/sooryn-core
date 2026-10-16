@@ -5,6 +5,22 @@ fun main() -> i32:
     if app.is_valid() == 0:
         return 1
 
+    # The size asked for is the logical client area (window 2.0): it comes
+    # back exactly, from the first frame, and the surface has the pixels the
+    # display scale makes of it.
+    if app.width != 320 or app.height != 180:
+        print("sooryn native smoke: the window's logical size is not the one asked for")
+        app.destroy()
+        return 3
+    if app.surface.width != app.physical_width or app.surface.height != app.physical_height:
+        print("sooryn native smoke: the surface does not match the window's pixels")
+        app.destroy()
+        return 4
+    if app.physical_width != app.to_physical(320) or app.physical_height != app.to_physical(180):
+        print("sooryn native smoke: the window's pixels are not its logical size at the display scale")
+        app.destroy()
+        return 5
+
     frame: i32 = 0
     while frame < 30:
         if app.begin_poll() == 0:
