@@ -299,6 +299,35 @@ app.use_font(face)
 `examples/arabic.dlt` is a working application that does exactly this and
 prepares nothing itself.
 
+## Scroll views
+
+`scroll_view_begin` / `scroll_view_end` are CSS `overflow: auto`. The
+application draws its content as if the region were as tall as the content.
+Sooryn measures the height from what was drawn, clips the content, scrolls
+it, and shows a scrollbar only when the content does not fit:
+
+```dolet
+view: i64 = app.alloc_scroll()            # once
+...
+top: i32 = app.scroll_view_begin(x, y, w, h, view)
+# draw the content from y = top, app.scroll_view_width() wide
+app.scroll_view_end()
+```
+
+- **The wheel glides.** It eases toward its target the way a browser's does,
+  at the same speed at any frame rate, instead of jumping a notch at a time.
+- **Scrolling is clamped** at both ends. The measured height includes a
+  little room below the last item, as a CSS scroll height includes padding.
+- **Rows scrolled out of view take no clicks**, and nothing scrolls under a
+  popup or behind a modal.
+- `scroll_offset(view)` reads the position. `scroll_into_view(view, top,
+  bottom, height)` brings a range into view.
+
+Scrollbars are a thin rounded thumb with no track, as current browsers draw
+them. It widens and brightens under the pointer and while dragged.
+`tests/scrollview.dlt` covers measuring, gliding, clamping, clicks and
+content that fits.
+
 ## Layers and hit testing
 
 What cannot be seen cannot be clicked, and what is on top gets the pointer,

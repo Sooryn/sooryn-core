@@ -1,0 +1,126 @@
+import sooryn
+
+# Scroll view (CSS overflow: auto): content measured from what was drawn, a
+# scrollbar only when it overflows, a wheel that glides instead of jumping,
+# clamping at both ends, and rows scrolled out of view take no clicks.
+
+VIEW_X: i32 = 10
+VIEW_Y: i32 = 10
+VIEW_W: i32 = 200
+VIEW_H: i32 = 100
+
+g_top: i32 = 0
+g_rows: i32 = 10
+g_clicks: i64 = 0
+
+fun frame(app: SoorynApp, view: i64):
+    if app.begin_offscreen() == 1:
+        g_top = app.scroll_view_begin(VIEW_X, VIEW_Y, VIEW_W, VIEW_H, view)
+        i: i32 = 0
+        while i < g_rows:
+            if app.button(VIEW_X, g_top + i * 40, 150, 32, "Row") == 1:
+                Memory.write_i32(g_clicks + (i as i64) * 4, Memory.read_i32(g_clicks + (i as i64) * 4) + 1)
+            i = i + 1
+        app.scroll_view_end()
+        app.end()
+
+fun settle(app: SoorynApp, view: i64):
+    n: i32 = 0
+    while n < 120:
+        frame(app, view)
+        n = n + 1
+
+fun main() -> i32:
+    app: SoorynApp = SoorynApp.headless(300, 200)
+    view: i64 = app.alloc_scroll()
+    g_clicks = Memory.malloc_zeroed(64)
+
+    # Content is measured: 9 gaps of 40 plus a 32 tall row, plus the end pad.
+    frame(app, view)
+    frame(app, view)
+    if Memory.read_i32(view + 8) != 404:
+        print("sooryn scrollview: the content height was not measured from what was drawn")
+        return 1
+    if app.scroll_view_width() != VIEW_W - 14:
+        print("sooryn scrollview: overflowing content did not make room for a scrollbar")
+        return 2
+
+    # The wheel glides: part of the way after one frame, all of it later.
+    app.inject_mouse_move(60, 40)
+    app.inject_wheel(-1.0)
+    frame(app, view)
+    app.inject_wheel(0.0)
+    frame(app, view)
+    partway: i32 = app.scroll_offset(view)
+    if partway <= 0 or partway >= 48:
+        print("sooryn scrollview: the wheel jumped instead of gliding")
+        return 3
+    settle(app, view)
+    if app.scroll_offset(view) != 48 or g_top != VIEW_Y - 48:
+        print("sooryn scrollview: the glide did not arrive at one wheel step")
+        return 4
+
+    # Clamped at the end: content 404 in a 100 tall view scrolls 304 at most.
+    app.inject_wheel(-50.0)
+    frame(app, view)
+    app.inject_wheel(0.0)
+    settle(app, view)
+    if app.scroll_offset(view) != 304:
+        print("sooryn scrollview: scrolling did not stop at the end of the content")
+        return 5
+
+    # Back to the top, then a row below the visible region takes no click.
+    app.inject_wheel(50.0)
+    frame(app, view)
+    app.inject_wheel(0.0)
+    settle(app, view)
+    if app.scroll_offset(view) != 0:
+        print("sooryn scrollview: scrolling did not stop at the start")
+        return 6
+    # Row 4 is at y 170..202, outside the view (10..110).
+    app.inject_mouse_move(60, 180)
+    app.inject_left_down()
+    frame(app, view)
+    app.inject_left_up()
+    frame(app, view)
+    if Memory.read_i32(g_clicks + 16) != 0:
+        print("sooryn scrollview: a row scrolled out of view took a click")
+        return 7
+    # Row 1 is visible at 50..82.
+    app.inject_mouse_move(60, 60)
+    app.inject_left_down()
+    frame(app, view)
+    app.inject_left_up()
+    frame(app, view)
+    if Memory.read_i32(g_clicks + 4) != 1:
+        print("sooryn scrollview: a visible row did not take its click")
+        return 8
+
+    # Content that fits: no scrollbar, full width, no scrolling.
+    small: i64 = app.alloc_scroll()
+    g_rows = 2
+    frame(app, small)
+    frame(app, small)
+    if app.scroll_view_width() != VIEW_W:
+        print("sooryn scrollview: content that fits still reserved a scrollbar")
+        return 9
+    app.inject_wheel(-3.0)
+    frame(app, small)
+    app.inject_wheel(0.0)
+    settle(app, small)
+    if app.scroll_offset(small) != 0:
+        print("sooryn scrollview: content that fits scrolled")
+        return 10
+
+    # scroll_into_view brings a range in, as focusing a field below does.
+    g_rows = 10
+    frame(app, view)
+    app.scroll_into_view(view, 280, 312, VIEW_H)
+    settle(app, view)
+    if app.scroll_offset(view) != 212:
+        print("sooryn scrollview: scroll_into_view did not bring the range into view")
+        return 11
+
+    app.destroy()
+    print("sooryn scrollview: ok")
+    return 0

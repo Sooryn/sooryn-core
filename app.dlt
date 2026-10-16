@@ -66,6 +66,16 @@ struct SoorynApp:
     popup_prev_h: i32 = 0
     dd_in_layer: i32 = 0
 
+    # ---- Scroll view (see scrollview.dlt) ----
+    sv_x: i32 = 0
+    sv_y: i32 = 0
+    sv_w: i32 = 0
+    sv_h: i32 = 0
+    sv_state: i64 = 0
+    sv_content_w: i32 = 0
+    sv_top: i32 = 0
+    sv_start: i32 = 0
+
     # ---- Hit clip (see hit.dlt) ----
     hit_clips: i64 = 0
     hit_clip_top: i32 = 0

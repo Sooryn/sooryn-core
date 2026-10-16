@@ -12,7 +12,7 @@ TABS_H:   i32 = 38
 STATUS_H: i32 = 30
 TABLE_ROWS: i32 = 5000
 
-fun page_controls(app: SoorynApp, area: UIRect, checks: i64, notify: i64, autosave: i64, volume: i64, progress: i64, clicks: i64, mode: i64, modal: i64):
+fun page_controls(app: SoorynApp, area: UIRect, checks: i64, notify: i64, autosave: i64, volume: i64, progress: i64, clicks: i64, mode: i64, modal: i64, left_view: i64, right_view: i64):
     # One row per line of text, in whatever face is in use.
     line: i32 = app.text_height() + 4
     columns: SoorynLayout = SoorynLayout.row_in(area, 16, 16)
@@ -22,7 +22,9 @@ fun page_controls(app: SoorynApp, area: UIRect, checks: i64, notify: i64, autosa
 
     # ---- left column ----
     app.panel_begin(left.left, left.top, left.right - left.left, left.bottom - left.top)
-    l: SoorynLayout = SoorynLayout.column_in(left, 18, 14)
+    # The panel scrolls when its content is taller than it (overflow: auto).
+    left_top: i32 = app.scroll_view_begin(left.left + 1, left.top + 1, left.right - left.left - 2, left.bottom - left.top - 2, left_view)
+    l: SoorynLayout = SoorynLayout.column_in(ui_make_rect(left.left, left_top - 1, app.scroll_view_width() + 2, 4000), 18, 14)
     app.title(l.next(0, app.title_height()).left, l.cursor_y - app.title_height(), "Controls")
     l.skip(6)
 
@@ -54,11 +56,13 @@ fun page_controls(app: SoorynApp, area: UIRect, checks: i64, notify: i64, autosa
     app.muted_label(l.next(0, line).left, l.cursor_y - line, "Progress")
     bar: UIRect = l.next(0, 18)
     app.progress_bar(bar.left, bar.top, bar.right - bar.left, 14, app.get_int(progress))
+    app.scroll_view_end()
     app.panel_end()
 
     # ---- right column ----
     app.panel_begin(right.left, right.top, right.right - right.left, right.bottom - right.top)
-    r: SoorynLayout = SoorynLayout.column_in(right, 18, 14)
+    right_top: i32 = app.scroll_view_begin(right.left + 1, right.top + 1, right.right - right.left - 2, right.bottom - right.top - 2, right_view)
+    r: SoorynLayout = SoorynLayout.column_in(ui_make_rect(right.left, right_top - 1, app.scroll_view_width() + 2, 4000), 18, 14)
     app.title(r.next(0, app.title_height()).left, r.cursor_y - app.title_height(), "More")
     r.skip(6)
 
@@ -89,6 +93,7 @@ fun page_controls(app: SoorynApp, area: UIRect, checks: i64, notify: i64, autosa
     dialog: UIRect = r.next(0, 36)
     if app.secondary_button(dialog.left, dialog.top, 160, 36, "Open dialog") == 1:
         app.set_bool(modal, 1)
+    app.scroll_view_end()
     app.panel_end()
 
 fun page_layout(app: SoorynApp, area: UIRect):
@@ -377,6 +382,8 @@ fun main() -> i32:
     clicks: i64 = app.alloc_int(0)
     mode: i64 = app.alloc_int(0)
     modal: i64 = app.alloc_bool(0)
+    left_view: i64 = app.alloc_scroll()
+    right_view: i64 = app.alloc_scroll()
     scroll: i64 = app.alloc_int(0)
     selected: i64 = app.alloc_int(-1)
     sort_col: i64 = app.alloc_int(0)
@@ -436,7 +443,7 @@ fun main() -> i32:
             active: i32 = app.get_int(tab)
             if active == 0:
                 app.push_id_str("controls")
-                page_controls(app, content, checks, notify, autosave, volume, progress, clicks, mode, modal)
+                page_controls(app, content, checks, notify, autosave, volume, progress, clicks, mode, modal, left_view, right_view)
                 app.pop_id()
             elif active == 1:
                 app.push_id_str("layout")

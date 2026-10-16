@@ -630,12 +630,22 @@ attach SoorynApp:
             if max_scroll > 0:
                 thumb_y = y + ((height - thumb_h) * scroll) / max_scroll
 
+        # A thin rounded thumb with no track, as current browsers draw one:
+        # it widens and brightens under the pointer and while dragged, so it
+        # stays out of the way until it is wanted.
         commands: UIDrawList = self.commands
-        commands.push_fill_rect(x, y, w, height, self.theme.surface)
-        thumb_color: UIColor = self.theme.surface_hover
-        if hovered_thumb == 1 or self.drag_id == id:
-            thumb_color = self.theme.accent
-        commands.push_fill_rect(x + 2, thumb_y + 2, w - 4, thumb_h - 4, thumb_color)
+        active: i32 = 0
+        if hovered_track == 1 or self.drag_id == id:
+            active = 1
+        thumb_w: i32 = 6
+        thumb_color: UIColor = self.theme.border
+        if active == 1:
+            thumb_w = 10
+            thumb_color = self.theme.muted_text
+        thumb_x: i32 = x + w - thumb_w - 1
+        if self.is_rtl() == 1:
+            thumb_x = x + 1
+        commands.push_fill_rounded_rect(thumb_x, thumb_y + 2, thumb_w, thumb_h - 4, thumb_w / 2, thumb_color)
         self.push_commands(commands)
         return changed
 

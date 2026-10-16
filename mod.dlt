@@ -27,6 +27,7 @@ load sooryn/clipboard
 load sooryn/cursor
 load sooryn/hit
 load sooryn/layers
+load sooryn/scrollview
 load sooryn/textmap
 load sooryn/table
 load sooryn/anim

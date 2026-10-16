@@ -1,0 +1,169 @@
+# ============================
+#  Sooryn Scroll View
+# ============================
+# CSS `overflow: auto`. The application draws its content as if the region
+# were as tall as the content; Sooryn measures how tall that was from the
+# draw commands, scrolls it, clips it, and shows a scrollbar only when the
+# content does not fit. The wheel glides to its target the way a browser's
+# does, slowing as it arrives, instead of jumping a notch at a time.
+#
+#     view: i64 = app.alloc_scroll()
+#     ...
+#     top: i32 = app.scroll_view_begin(x, y, w, h, view)
+#     # draw content starting at y = top, width app.scroll_view_width()
+#     app.scroll_view_end()
+#
+# The height is the one measured last frame, which is the one known when the
+# content starts; a view whose content grows catches up the next frame.
+
+# State block layout (alloc_scroll): target offset, shown offset in 1/256
+# px, content height, all logical.
+SOORYN_SV_TARGET: i64 = 0
+SOORYN_SV_SHOWN_Q8: i64 = 4
+SOORYN_SV_CONTENT: i64 = 8
+SOORYN_SV_BAR: i32 = 14
+SOORYN_SV_WHEEL_STEP: i32 = 48
+# Room kept below the last thing drawn, as a CSS scroll height includes the
+# padding: scrolled to the end, content does not sit on the edge.
+SOORYN_SV_END_PAD: i32 = 12
+# Time constant of the glide, in microseconds.
+SOORYN_SV_GLIDE_US: i64 = 70000
+
+attach SoorynApp:
+    fun alloc_scroll(self) -> i64:
+        return self.alloc_buf(16)
+
+    # The width content should use: the view less its scrollbar, when it has
+    # one.
+    fun scroll_view_width(self) -> i32:
+        return self.sv_content_w
+
+    # How far the view is scrolled (logical).
+    fun scroll_offset(self, state: i64) -> i32:
+        if state == 0:
+            return 0
+        return Memory.read_i32(state + SOORYN_SV_SHOWN_Q8) / 256
+
+    # Scroll so that the logical range [top, bottom) of the content is in
+    # view, as focusing a field below the fold does in a browser.
+    fun scroll_into_view(self, state: i64, top: i32, bottom: i32, view_height: i32):
+        if state == 0:
+            return
+        target: i32 = Memory.read_i32(state + SOORYN_SV_TARGET)
+        if top < target:
+            target = top
+        elif bottom > target + view_height:
+            target = bottom - view_height
+        Memory.write_i32(state + SOORYN_SV_TARGET, target)
+
+    fun scroll_view_begin(self, x: i32, y: i32, width: i32, height: i32, state: i64) -> i32:
+        self.sv_x = x
+        self.sv_y = y
+        self.sv_w = width
+        self.sv_h = height
+        self.sv_state = state
+        if state == 0:
+            self.sv_content_w = width
+            self.sv_top = y
+            self.sv_start = self.commands.count
+            self.push_clip(x, y, width, height)
+            return y
+        content: i32 = Memory.read_i32(state + SOORYN_SV_CONTENT)
+        max_scroll: i32 = content - height
+        if max_scroll < 0:
+            max_scroll = 0
+        target: i32 = Memory.read_i32(state + SOORYN_SV_TARGET)
+
+        # The wheel over the visible region moves the target; what is under
+        # a popup or behind a modal does not scroll (hit() knows).
+        if self.hit(x, y, width, height) == 1:
+            wheel: f32 = self.input_state.mouse.wheel_y
+            if wheel != 0.0:
+                target = target - ((wheel * (SOORYN_SV_WHEEL_STEP as f32)) as i32)
+        if target < 0:
+            target = 0
+        if target > max_scroll:
+            target = max_scroll
+        Memory.write_i32(state + SOORYN_SV_TARGET, target)
+
+        # Glide: close a share of the gap that depends on the time since the
+        # last frame, so the speed is the same at any frame rate.
+        shown: i64 = Memory.read_i32(state + SOORYN_SV_SHOWN_Q8) as i64
+        goal: i64 = (target as i64) * 256
+        if shown != goal:
+            dt: i64 = self.frame_delta_us
+            if dt <= 0:
+                dt = 16666
+            step: i64 = ((goal - shown) * dt) / (dt + SOORYN_SV_GLIDE_US)
+            if step == 0:
+                step = goal - shown
+            shown = shown + step
+            gap: i64 = goal - shown
+            if gap < 0:
+                gap = 0 - gap
+            if gap < 64:
+                shown = goal
+            else:
+                self.anim_active = self.anim_active + 1
+            Memory.write_i32(state + SOORYN_SV_SHOWN_Q8, shown as i32)
+
+        self.sv_content_w = width
+        if max_scroll > 0:
+            self.sv_content_w = width - SOORYN_SV_BAR
+        clip_x: i32 = x
+        if self.is_rtl() == 1 and max_scroll > 0:
+            clip_x = x + SOORYN_SV_BAR
+        self.push_clip(clip_x, y, self.sv_content_w, height)
+        self.sv_top = y - ((shown + 128) / 256) as i32
+        self.sv_start = self.commands.count
+        return self.sv_top
+
+    fun scroll_view_end(self):
+        self.pop_clip()
+        state: i64 = self.sv_state
+        if state == 0:
+            return
+        bottom: i32 = self.measure_commands_bottom(self.sv_start)
+        content: i32 = 0
+        if bottom > self.sv_top:
+            content = bottom - self.sv_top + SOORYN_SV_END_PAD
+        Memory.write_i32(state + SOORYN_SV_CONTENT, content)
+        if content > self.sv_h:
+            bar_x: i32 = self.sv_x + self.sv_w - 12
+            if self.is_rtl() == 1:
+                bar_x = self.sv_x
+            self.scrollbar_vertical_area(bar_x, self.sv_y, self.sv_h, self.sv_h, content, state + SOORYN_SV_TARGET, self.sv_x, self.sv_y, 0, 0)
+
+    # The lowest logical y any command since `start` reaches.
+    fun measure_commands_bottom(self, start: i32) -> i32:
+        list: UIDrawList = self.commands
+        lowest: i32 = 0 - 2147483647
+        line: i32 = self.surface.font_line_height
+        i: i32 = start
+        while i < list.count:
+            at: i64 = (i as i64) * 4
+            kind: i32 = Memory.read_i32(list.kinds + at)
+            y: i32 = Memory.read_i32(list.ys + at)
+            h: i32 = Memory.read_i32(list.heights + at)
+            bottom: i32 = 0 - 2147483647
+            if kind == UI_CMD_TEXT or kind == UI_CMD_TEXT_BG:
+                bottom = y + line
+            elif kind == UI_CMD_LINE or kind == UI_CMD_FILL_TRIANGLE:
+                y2: i32 = Memory.read_i32(list.y2s + at)
+                bottom = y
+                if y2 > bottom:
+                    bottom = y2
+            elif kind == UI_CMD_FILL_CIRCLE or kind == UI_CMD_OUTLINE_CIRCLE or kind == UI_CMD_ARC:
+                bottom = y + Memory.read_i32(list.widths + at)
+            elif kind != UI_CMD_CLIP_PUSH and kind != UI_CMD_CLIP_POP and kind != UI_CMD_CLEAR:
+                bottom = y + h
+            if bottom > lowest:
+                lowest = bottom
+            i = i + 1
+        if lowest == 0 - 2147483647:
+            return self.sv_top
+        # Round up: a content edge that falls inside a logical unit must not
+        # be scrolled short of by that fraction.
+        if self.display_scale == 100:
+            return lowest
+        return (lowest * 100 + self.display_scale - 1) / self.display_scale
