@@ -351,6 +351,12 @@ area of `w` x `h` **logical** units, as a page asks for CSS pixels: at 125% a
 actually has (window 2.0 sizes the client area and keeps it inside the
 display's work area).
 
+**Moving between displays.** A windowed application follows its display's
+scale: dragged to a display of another density, it is re-laid out there and
+its default face is rebuilt at the new size, while its logical size stays the
+same. `set_scale_percent` fixes the scale (the application chose), and
+`follow_display_scale(1)` hands it back to the display.
+
 **Where it comes from.** Windows reports the display's dots per inch and Sooryn
 adopts it before the first frame. The Linux backend does not yet listen for
 the Wayland output scale or read Xft.dpi, so it reports one to one rather

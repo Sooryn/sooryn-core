@@ -179,6 +179,46 @@ fun main() -> i32:
     c.destroy()
 
     # ---------------------------------------------------------------
+    # A window moved between displays of different densities keeps its
+    # logical size while its pixels change. The surface must follow the
+    # pixels even when the logical size is unchanged.
+    # ---------------------------------------------------------------
+    mv: SoorynApp = SoorynApp.headless(400, 300)
+    mv.follow_display_scale(1)
+    mv.apply_window_metrics(500, 375, 125)
+    if mv.scale_percent() != 125 or mv.width != 400 or mv.height != 300:
+        print("sooryn scale: moving to a denser display did not adopt its scale")
+        mv.destroy()
+        return 30
+    if mv.surface.width != 500 or mv.surface.height != 375 or mv.window_resized != 1:
+        print("sooryn scale: the surface did not follow the denser display's pixels")
+        mv.destroy()
+        return 31
+    mv.apply_window_metrics(400, 300, 100)
+    if mv.scale_percent() != 100 or mv.width != 400 or mv.height != 300:
+        print("sooryn scale: moving back did not restore the scale")
+        mv.destroy()
+        return 32
+    if mv.surface.width != 400 or mv.window_resized != 1:
+        print("sooryn scale: same logical size, fewer pixels, and the surface was not resized")
+        mv.destroy()
+        return 33
+    # Nothing changed: no resize.
+    mv.apply_window_metrics(400, 300, 100)
+    if mv.window_resized != 0:
+        print("sooryn scale: an unchanged window reported a resize")
+        mv.destroy()
+        return 34
+    # A scale the application chose is not overridden by the display.
+    mv.set_scale_percent(150)
+    mv.apply_window_metrics(600, 450, 125)
+    if mv.scale_percent() != 150:
+        print("sooryn scale: the display overrode a scale the application set")
+        mv.destroy()
+        return 35
+    mv.destroy()
+
+    # ---------------------------------------------------------------
     # Going back restores everything.
     # ---------------------------------------------------------------
     a.set_scale_percent(100)

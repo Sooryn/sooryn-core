@@ -38,6 +38,10 @@ struct SoorynApp:
     physical_width: i32 = 0
     physical_height: i32 = 0
     uses_default_font: i32 = 1
+    # 1 while the scale comes from the display (adopt_display_scale), so a
+    # window moved to a display of another density follows it. An explicit
+    # set_scale_percent turns it off: the application chose.
+    follows_display_scale: i32 = 0
     # The default face: SOORYN_FONT_SYSTEM for windowed applications (the
     # platform's interface typeface, as `system-ui` is on the web), and
     # SOORYN_FONT_BUILTIN for headless ones, whose pixels must not depend on
@@ -449,21 +453,36 @@ attach SoorynApp:
                 window_present_framebuffer(self.window_handle, self.surface.pixels, self.surface.width, self.surface.height, self.surface.pitch)
 
     fun sync_window(self):
-        old_width: i32 = self.width
-        old_height: i32 = self.height
         self.window_handle = Window.handle()
         self.window_hinstance = Window.hinstance()
-        self.physical_width = Window.width()
-        self.physical_height = Window.height()
-        self.sync_logical_size()
+        self.apply_window_metrics(Window.width(), Window.height(), window_scale_percent())
         self.window_should_close = Window.should_close()
-        self.window_resized = 0
-        if self.width != old_width or self.height != old_height:
-            self.window_resized = 1
-            if self.physical_width > 0 and self.physical_height > 0:
-                self.surface.resize(self.physical_width, self.physical_height)
         self.window_focused = Window.focused()
         self.window_surface = 0
+
+    # Take the window's pixel size and its display's scale. Kept apart from
+    # the window system so it can be exercised headless.
+    #
+    # A window moved to a display of another density keeps its logical size
+    # (window 2.0) while its pixels change. So a resize is a change in either
+    # size: comparing only the logical one left the surface at the old pixel
+    # count after such a move.
+    fun apply_window_metrics(self, pixel_width: i32, pixel_height: i32, display_scale: i32):
+        old_width: i32 = self.width
+        old_height: i32 = self.height
+        old_pixel_width: i32 = self.physical_width
+        old_pixel_height: i32 = self.physical_height
+        if self.follows_display_scale == 1 and display_scale > 0 and display_scale != self.display_scale:
+            self.set_scale_percent(display_scale)
+            self.follows_display_scale = 1
+        self.physical_width = pixel_width
+        self.physical_height = pixel_height
+        self.sync_logical_size()
+        self.window_resized = 0
+        if self.width != old_width or self.height != old_height or pixel_width != old_pixel_width or pixel_height != old_pixel_height:
+            self.window_resized = 1
+            if pixel_width > 0 and pixel_height > 0:
+                self.surface.resize(pixel_width, pixel_height)
 
     fun update_mouse(self):
         input_update()

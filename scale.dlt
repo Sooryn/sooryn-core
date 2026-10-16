@@ -40,6 +40,9 @@ attach SoorynApp:
         return self.to_physical(logical_size)
 
     fun set_scale_percent(self, percent: i32) -> i32:
+        # An explicit scale is the application's choice: stop following the
+        # display. adopt_display_scale turns following back on.
+        self.follows_display_scale = 0
         value: i32 = percent
         if value < 50:
             value = 50
@@ -63,7 +66,15 @@ attach SoorynApp:
         detected: i32 = window_scale_percent()
         if detected <= 0:
             return 0
-        return self.set_scale_percent(detected)
+        result: i32 = self.set_scale_percent(detected)
+        self.follows_display_scale = 1
+        return result
+
+    # Follow the display's scale from now on (1), or keep the current one
+    # (0). Windowed applications follow it from create(); a window moved to a
+    # display of another density is re-laid out at that density.
+    fun follow_display_scale(self, enabled: i32):
+        self.follows_display_scale = enabled
 
     fun sync_logical_size(self):
         self.width = self.to_logical(self.physical_width)
