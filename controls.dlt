@@ -30,7 +30,7 @@ attach SoorynApp:
         label_x: i32 = self.mirror_x(x, span, x + dot + 8, label_w)
 
         mouse: UIMouseState = self.input_state.mouse
-        hovered: i32 = mouse.is_over_xy(dot_x, y, dot, dot)
+        hovered: i32 = self.hit(dot_x, y, dot, dot)
         if hovered == 1:
             self.set_hover(id)
 
@@ -80,7 +80,7 @@ attach SoorynApp:
         id: i64 = self.widget_id(171, x, y)
         focused: i32 = self.register_focusable(id)
         mouse: UIMouseState = self.input_state.mouse
-        hovered: i32 = mouse.is_over_xy(x, y, width, height)
+        hovered: i32 = self.hit(x, y, width, height)
         if hovered == 1:
             self.set_hover(id)
 
@@ -98,8 +98,8 @@ attach SoorynApp:
         up_x: i32 = self.mirror_x(x, width, x + width - button_w, button_w)
         field_x: i32 = self.mirror_x(x, width, x + button_w, width - button_w * 2)
 
-        over_down: i32 = mouse.is_over_xy(down_x, y, button_w, height)
-        over_up: i32 = mouse.is_over_xy(up_x, y, button_w, height)
+        over_down: i32 = self.hit(down_x, y, button_w, height)
+        over_up: i32 = self.hit(up_x, y, button_w, height)
 
         moved: i32 = 0
         if mouse.left_pressed() == 1:
@@ -161,7 +161,7 @@ attach SoorynApp:
     fun tree_row(self, x: i32, y: i32, width: i32, height: i32, depth: i32, label: str, has_children: i32, open_state: i32, selected: i32) -> i32:
         id: i64 = self.widget_id(172, x, y)
         mouse: UIMouseState = self.input_state.mouse
-        hovered: i32 = mouse.is_over_xy(x, y, width, height)
+        hovered: i32 = self.hit(x, y, width, height)
         if hovered == 1:
             self.set_hover(id)
 
@@ -195,7 +195,7 @@ attach SoorynApp:
         self.push_commands(commands)
 
         if hovered == 1 and mouse.left_pressed() == 1:
-            if has_children == 1 and mouse.is_over_xy(twisty_x, y, twisty, height) == 1:
+            if has_children == 1 and self.hit(twisty_x, y, twisty, height) == 1:
                 return 1
             return 2
         return 0
@@ -230,7 +230,7 @@ attach SoorynApp:
         self.mn_index = self.mn_index + 1
 
         mouse: UIMouseState = self.input_state.mouse
-        hovered: i32 = mouse.is_over_xy(self.mn_x, top, self.mn_w, self.mn_item_h)
+        hovered: i32 = self.hit(self.mn_x, top, self.mn_w, self.mn_item_h)
 
         commands: UIDrawList = self.commands
         if hovered == 1:
@@ -266,7 +266,7 @@ attach SoorynApp:
         # menu is expected to do and what makes it safe to leave open.
         mouse: UIMouseState = self.input_state.mouse
         if mouse.left_pressed() == 1:
-            if mouse.is_over_xy(self.mn_x, self.mn_y, self.mn_w, height) == 0:
+            if self.hit(self.mn_x, self.mn_y, self.mn_w, height) == 0:
                 Memory.write_i32(self.mn_open_ptr, 0)
         self.mn_open = 0
 

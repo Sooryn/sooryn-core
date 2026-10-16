@@ -299,6 +299,26 @@ app.use_font(face)
 `examples/arabic.dlt` is a working application that does exactly this and
 prepares nothing itself.
 
+## Layers and hit testing
+
+What cannot be seen cannot be clicked, and what is on top gets the pointer,
+as on a web page:
+
+- **Clips are honoured.** A widget cut away by its panel's clip, or scrolled
+  out of a scroll view, does not take clicks from what is visible there.
+  Every built-in widget hit-tests through `app.hit(x, y, w, h)`, which custom
+  widgets should use too.
+- **An open dropdown is a popup.** Its list is drawn above everything else
+  in the frame, is not cut by its panel, owns the pointer over its
+  rectangle, casts a shadow, and closes when the pointer is pressed anywhere
+  outside it.
+- **A modal is modal.** It is drawn above the page with a raised panel, and
+  nothing behind it takes the pointer while it is open.
+
+Popups and modals record into an overlay draw list rendered after the frame,
+so they are on top whatever order the application draws in.
+`tests/layers.dlt` checks each case and fails against the previous release.
+
 ## Clipboard
 
 Text fields copy, cut and paste with Ctrl+C, Ctrl+X and Ctrl+V, and Ctrl+A

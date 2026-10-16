@@ -43,6 +43,34 @@ struct SoorynApp:
     # set_scale_percent turns it off: the application chose.
     follows_display_scale: i32 = 0
 
+    # ---- Layers (see layers.dlt) ----
+    overlay: UIDrawList = UIDrawList()
+    layer_saved_commands: UIDrawList = UIDrawList()
+    layer_depth: i32 = 0
+    layer_now: i32 = 0
+    layer_saved: i32 = 0
+    layer_saved_hit_top: i32 = 0
+    modal_now: i32 = 0
+    modal_prev: i32 = 0
+    popup_now: i32 = 0
+    popup_now_id: i64 = 0
+    popup_now_x: i32 = 0
+    popup_now_y: i32 = 0
+    popup_now_w: i32 = 0
+    popup_now_h: i32 = 0
+    popup_prev: i32 = 0
+    popup_prev_id: i64 = 0
+    popup_prev_x: i32 = 0
+    popup_prev_y: i32 = 0
+    popup_prev_w: i32 = 0
+    popup_prev_h: i32 = 0
+    dd_in_layer: i32 = 0
+
+    # ---- Hit clip (see hit.dlt) ----
+    hit_clips: i64 = 0
+    hit_clip_top: i32 = 0
+    hit_clip_capacity: i32 = 0
+
     # ---- Pointer cursor (see cursor.dlt) ----
     cursor_wanted: i32 = 0
     cursor_current: i32 = 0
@@ -293,6 +321,7 @@ attach SoorynApp:
         app.canvas_h = height
         app.valid = 1
         app.commands = commands
+        app.overlay = ui_draw_list_create(256)
         app.surface = surface
         app.input_state = ui_input_create()
         # Take the display's scale before the first frame: the logical size
@@ -334,6 +363,7 @@ attach SoorynApp:
         app.canvas_h = height
         app.valid = 1
         app.commands = commands
+        app.overlay = ui_draw_list_create(256)
         app.surface = surface
         app.input_state = ui_input_create()
         return app
@@ -362,8 +392,11 @@ attach SoorynApp:
         self._free_toasts()
         self._free_system_font()
         self._free_clipboard()
+        self._free_hit_clips()
         if self.commands.is_valid() == 1:
             self.commands.destroy()
+        if self.overlay.is_valid() == 1:
+            self.overlay.destroy()
         if self.surface.is_valid() == 1:
             self.surface.destroy()
 
@@ -452,10 +485,14 @@ attach SoorynApp:
             self.hover_frames = 0
         self.resolve_focus_move()
         self.resolve_cursor()
+        self.close_layers()
         canvas: DrawCanvas = self.surface.canvas()
         if canvas.is_valid() == 1:
             if self.frame_needs_render() == 1:
                 self.commands.render(canvas)
+                # Popups and modals, above everything and unclipped.
+                canvas.clear_clip()
+                self.overlay.render(canvas)
                 self.frame_rendered_count = self.frame_rendered_count + 1
             else:
                 self.frame_reused_count = self.frame_reused_count + 1
@@ -536,6 +573,8 @@ attach SoorynApp:
         self.commands.push_clear(self.width, self.height, self.theme.background)
         self.frame_counter = self.frame_counter + 1
         self.hover_seen = 0
+        self.hit_clip_top = 0
+        self.roll_layers()
         self.cursor_wanted = SOORYN_CURSOR_ARROW
         self.anim_active = 0
         self.begin_timing()
@@ -698,9 +737,11 @@ attach SoorynApp:
 
     fun push_clip(self, x: i32, y: i32, width: i32, height: i32):
         self.commands.push_clip(x, y, width, height)
+        self.push_hit_clip(x, y, width, height)
 
     fun pop_clip(self):
         self.commands.pop_clip()
+        self.pop_hit_clip()
 
 fun sooryn_app_create(title: str, width: i32, height: i32) -> SoorynApp:
     return SoorynApp.create(title, width, height)

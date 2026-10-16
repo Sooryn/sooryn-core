@@ -1,0 +1,75 @@
+# ============================
+#  Sooryn Hit Testing
+# ============================
+# What cannot be seen cannot be clicked. A widget cut away by a clip, such as
+# one past the edge of its panel or scrolled out of a scroll view, must not
+# take the pointer from what is visible there instead. Every widget asks
+# hit(), which requires the pointer to be inside both the widget and the
+# current clip.
+#
+# Sooryn keeps the clip stack in logical units, alongside the physical one
+# in the draw list, because hit testing happens in logical units.
+
+attach SoorynApp:
+    # 1 when the pointer is over this rectangle and inside the current clip.
+    fun hit(self, x: i32, y: i32, width: i32, height: i32) -> i32:
+        mouse: UIMouseState = self.input_state.mouse
+        if mouse.is_over_xy(x, y, width, height) == 0:
+            return 0
+        if self.layer_blocks_pointer() == 1:
+            return 0
+        if self.hit_clip_top <= 0:
+            return 1
+        top: i64 = self.hit_clips + ((self.hit_clip_top - 1) as i64) * 16
+        return mouse.is_over_xy(Memory.read_i32(top), Memory.read_i32(top + 4), Memory.read_i32(top + 8), Memory.read_i32(top + 12))
+
+    fun push_hit_clip(self, x: i32, y: i32, width: i32, height: i32):
+        if self.hit_clip_top >= self.hit_clip_capacity:
+            capacity: i32 = self.hit_clip_capacity * 2
+            if capacity < 16:
+                capacity = 16
+            grown: i64 = Memory.malloc_zeroed((capacity as i64) * 16)
+            if grown == 0:
+                return
+            if self.hit_clips != 0:
+                Memory.copy(grown, self.hit_clips, (self.hit_clip_top as i64) * 16)
+                Memory.free(self.hit_clips)
+            self.hit_clips = grown
+            self.hit_clip_capacity = capacity
+        left: i32 = x
+        top_y: i32 = y
+        right: i32 = x + width
+        bottom: i32 = y + height
+        if self.hit_clip_top > 0:
+            parent: i64 = self.hit_clips + ((self.hit_clip_top - 1) as i64) * 16
+            px: i32 = Memory.read_i32(parent)
+            py: i32 = Memory.read_i32(parent + 4)
+            if left < px:
+                left = px
+            if top_y < py:
+                top_y = py
+            if right > px + Memory.read_i32(parent + 8):
+                right = px + Memory.read_i32(parent + 8)
+            if bottom > py + Memory.read_i32(parent + 12):
+                bottom = py + Memory.read_i32(parent + 12)
+        if right < left:
+            right = left
+        if bottom < top_y:
+            bottom = top_y
+        slot: i64 = self.hit_clips + (self.hit_clip_top as i64) * 16
+        Memory.write_i32(slot, left)
+        Memory.write_i32(slot + 4, top_y)
+        Memory.write_i32(slot + 8, right - left)
+        Memory.write_i32(slot + 12, bottom - top_y)
+        self.hit_clip_top = self.hit_clip_top + 1
+
+    fun pop_hit_clip(self):
+        if self.hit_clip_top > 0:
+            self.hit_clip_top = self.hit_clip_top - 1
+
+    fun _free_hit_clips(self):
+        if self.hit_clips != 0:
+            Memory.free(self.hit_clips)
+        self.hit_clips = 0
+        self.hit_clip_top = 0
+        self.hit_clip_capacity = 0

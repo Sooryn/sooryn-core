@@ -33,21 +33,8 @@ attach SoorynApp:
 
     # XXH64 over everything that decides the frame's pixels.
     fun frame_signature(self) -> i64:
-        list: UIDrawList = self.commands
-        count: i64 = list.count as i64
-        bytes4: i64 = count * 4
-        key: u64 = dpk_xxh64(list.kinds, bytes4, count as u64)
-        key = dpk_hash_combine(key, dpk_xxh64(list.xs, bytes4, 1))
-        key = dpk_hash_combine(key, dpk_xxh64(list.ys, bytes4, 2))
-        key = dpk_hash_combine(key, dpk_xxh64(list.widths, bytes4, 3))
-        key = dpk_hash_combine(key, dpk_xxh64(list.heights, bytes4, 4))
-        key = dpk_hash_combine(key, dpk_xxh64(list.x2s, bytes4, 5))
-        key = dpk_hash_combine(key, dpk_xxh64(list.y2s, bytes4, 6))
-        key = dpk_hash_combine(key, dpk_xxh64(list.colors, bytes4, 7))
-        key = dpk_hash_combine(key, dpk_xxh64(list.backgrounds, bytes4, 8))
-        key = dpk_hash_combine(key, dpk_xxh64(list.thicknesses, bytes4, 9))
-        key = dpk_hash_combine(key, dpk_xxh64(list.texts, count * 8, 10))
-        key = dpk_hash_combine(key, dpk_xxh64(list.text_data, list.text_used, 11))
+        key: u64 = sooryn_list_signature(self.commands) as u64
+        key = dpk_hash_combine(key, sooryn_list_signature(self.overlay) as u64)
         key = dpk_hash_combine(key, self.surface.width as u64)
         key = dpk_hash_combine(key, self.surface.height as u64)
         key = dpk_hash_combine(key, self.surface.font as u64)
@@ -55,13 +42,9 @@ attach SoorynApp:
         return key as i64
 
     fun frame_draws_image(self) -> i32:
-        list: UIDrawList = self.commands
-        i: i32 = 0
-        while i < list.count:
-            if Memory.read_i32(list.kinds + (i as i64) * 4) == UI_CMD_IMAGE:
-                return 1
-            i = i + 1
-        return 0
+        if sooryn_list_draws_image(self.commands) == 1:
+            return 1
+        return sooryn_list_draws_image(self.overlay)
 
     # Whether this frame's commands have to be rasterized.
     fun frame_needs_render(self) -> i32:
@@ -77,3 +60,29 @@ attach SoorynApp:
         self.frame_has_signature = 1
         self.frame_force_render = 0
         return needed
+
+# XXH64 over everything in one draw list that decides its pixels.
+fun sooryn_list_signature(list: UIDrawList) -> i64:
+    count: i64 = list.count as i64
+    bytes4: i64 = count * 4
+    key: u64 = dpk_xxh64(list.kinds, bytes4, count as u64)
+    key = dpk_hash_combine(key, dpk_xxh64(list.xs, bytes4, 1))
+    key = dpk_hash_combine(key, dpk_xxh64(list.ys, bytes4, 2))
+    key = dpk_hash_combine(key, dpk_xxh64(list.widths, bytes4, 3))
+    key = dpk_hash_combine(key, dpk_xxh64(list.heights, bytes4, 4))
+    key = dpk_hash_combine(key, dpk_xxh64(list.x2s, bytes4, 5))
+    key = dpk_hash_combine(key, dpk_xxh64(list.y2s, bytes4, 6))
+    key = dpk_hash_combine(key, dpk_xxh64(list.colors, bytes4, 7))
+    key = dpk_hash_combine(key, dpk_xxh64(list.backgrounds, bytes4, 8))
+    key = dpk_hash_combine(key, dpk_xxh64(list.thicknesses, bytes4, 9))
+    key = dpk_hash_combine(key, dpk_xxh64(list.texts, count * 8, 10))
+    key = dpk_hash_combine(key, dpk_xxh64(list.text_data, list.text_used, 11))
+    return key as i64
+
+fun sooryn_list_draws_image(list: UIDrawList) -> i32:
+    i: i32 = 0
+    while i < list.count:
+        if Memory.read_i32(list.kinds + (i as i64) * 4) == UI_CMD_IMAGE:
+            return 1
+        i = i + 1
+    return 0

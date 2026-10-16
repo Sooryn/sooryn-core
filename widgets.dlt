@@ -97,7 +97,7 @@ attach SoorynApp:
         id: i64 = self.widget_id(110, x, y)
         focused: i32 = self.register_focusable(id)
         mouse: UIMouseState = self.input_state.mouse
-        hovered: i32 = mouse.is_over_xy(x, y, width, height)
+        hovered: i32 = self.hit(x, y, width, height)
         fill: UIColor = self.mix_colors(self.theme.accent, self.theme.accent_hover, self.anim_hover(id, hovered))
 
         commands: UIDrawList = self.commands
@@ -127,7 +127,7 @@ attach SoorynApp:
         id: i64 = self.widget_id(111, x, y)
         focused: i32 = self.register_focusable(id)
         mouse: UIMouseState = self.input_state.mouse
-        hovered: i32 = mouse.is_over_xy(x, y, width, height)
+        hovered: i32 = self.hit(x, y, width, height)
         fill: UIColor = self.mix_colors(self.theme.surface, self.theme.surface_hover, self.anim_hover(id, hovered))
 
         commands: UIDrawList = self.commands
@@ -174,7 +174,7 @@ attach SoorynApp:
         box_x: i32 = self.mirror_x(x, span, x, box)
         label_x: i32 = self.mirror_x(x, span, x + box + 8, label_w)
         mouse: UIMouseState = self.input_state.mouse
-        hovered: i32 = mouse.is_over_xy(box_x, y, box, box)
+        hovered: i32 = self.hit(box_x, y, box, box)
         if hovered == 1:
             self.set_hover(id)
 
@@ -229,7 +229,7 @@ attach SoorynApp:
         track_x: i32 = self.mirror_x(x, toggle_span, x, w)
         toggle_label_x: i32 = self.mirror_x(x, toggle_span, x + w + 8, toggle_label_w)
         mouse: UIMouseState = self.input_state.mouse
-        hovered: i32 = mouse.is_over_xy(track_x, y, w, h)
+        hovered: i32 = self.hit(track_x, y, w, h)
         if hovered == 1:
             self.set_hover(id)
 
@@ -283,7 +283,7 @@ attach SoorynApp:
         id: i64 = self.widget_id(102, x, y)
         focused: i32 = self.register_focusable(id)
         mouse: UIMouseState = self.input_state.mouse
-        hovered: i32 = mouse.is_over_xy(x, y, width, h)
+        hovered: i32 = self.hit(x, y, width, h)
         if hovered == 1:
             self.set_hover(id)
 
@@ -412,7 +412,7 @@ attach SoorynApp:
         # whatever Tab decided this frame.
         self.register_focusable(id)
         mouse: UIMouseState = self.input_state.mouse
-        hovered: i32 = mouse.is_over_xy(x, y, width, height)
+        hovered: i32 = self.hit(x, y, width, height)
         if hovered == 1:
             self.set_hover(id)
             self.want_cursor(SOORYN_CURSOR_TEXT)
@@ -570,7 +570,7 @@ attach SoorynApp:
         w: i32 = 12
         id: i64 = self.widget_id(120, x, y)
         mouse: UIMouseState = self.input_state.mouse
-        hovered_track: i32 = mouse.is_over_xy(x, y, w, height)
+        hovered_track: i32 = self.hit(x, y, w, height)
         if hovered_track == 1:
             self.set_hover(id)
             self.want_cursor(SOORYN_CURSOR_ARROW)
@@ -594,7 +594,7 @@ attach SoorynApp:
         if max_scroll > 0:
             thumb_y = y + ((height - thumb_h) * scroll) / max_scroll
 
-        hovered_thumb: i32 = mouse.is_over_xy(x, thumb_y, w, thumb_h)
+        hovered_thumb: i32 = self.hit(x, thumb_y, w, thumb_h)
 
         if hovered_thumb == 1 and mouse.left_pressed() == 1:
             self.drag_id = id
@@ -613,7 +613,7 @@ attach SoorynApp:
                     changed = 1
 
         # Mouse wheel over the wheel-sensitive area, not just the track.
-        if mouse.is_over_xy(wheel_x, wheel_y, wheel_w, wheel_h) == 1:
+        if self.hit(wheel_x, wheel_y, wheel_w, wheel_h) == 1:
             wheel: f32 = self.input_state.mouse.wheel_y
             if wheel != 0.0:
                 new_scroll: i32 = scroll - ((wheel * 40.0) as i32)
@@ -709,7 +709,7 @@ attach SoorynApp:
             item_x = self.tab_cursor_x - item_width
         focused: i32 = self.register_focusable(id)
         mouse: UIMouseState = self.input_state.mouse
-        hovered: i32 = mouse.is_over_xy(item_x, self.tab_y, item_width, self.tab_h)
+        hovered: i32 = self.hit(item_x, self.tab_y, item_width, self.tab_h)
         if hovered == 1:
             self.set_hover(id)
 
@@ -768,7 +768,7 @@ attach SoorynApp:
         self.dd_id = id
 
         mouse: UIMouseState = self.input_state.mouse
-        hovered: i32 = mouse.is_over_xy(x, y, width, height)
+        hovered: i32 = self.hit(x, y, width, height)
         if hovered == 1:
             self.set_hover(id)
 
@@ -810,6 +810,15 @@ attach SoorynApp:
         self.push_commands(commands)
         if focused == 1:
             self.focus_ring_rounded(x, y, width, height, 0)
+        # An open list is a popup: above everything, unclipped, and the only
+        # thing taking the pointer over its rectangle. Its shadow uses the
+        # height it had last frame, the one known before the items are drawn.
+        self.dd_in_layer = 0
+        if is_open == 1:
+            self.enter_layer(SOORYN_LAYER_POPUP)
+            self.dd_in_layer = 1
+            if self.popup_prev == 1 and self.popup_prev_id == id:
+                self.elevation(x, y + height, width, self.popup_prev_h, 0, 4)
         return is_open
 
     fun dropdown_item(self, label: str) -> i32:
@@ -822,7 +831,7 @@ attach SoorynApp:
         self.pop_id()
         self.pop_id()
         mouse: UIMouseState = self.input_state.mouse
-        hovered: i32 = mouse.is_over_xy(self.dd_x, item_y, self.dd_w, self.dd_h)
+        hovered: i32 = self.hit(self.dd_x, item_y, self.dd_w, self.dd_h)
         if hovered == 1:
             self.set_hover(id)
 
@@ -856,6 +865,19 @@ attach SoorynApp:
             commands: UIDrawList = self.commands
             commands.push_outline_rect(self.dd_x, self.dd_y + self.dd_h, self.dd_w, h, self.theme.border, self.theme.border_width)
             self.push_commands(commands)
+        if self.dd_in_layer == 1:
+            list_h: i32 = self.dd_item_idx * self.dd_h
+            self.claim_popup(self.dd_id, self.dd_x, self.dd_y + self.dd_h, self.dd_w, list_h)
+            # A press anywhere but the field or the list closes it, as a
+            # menu on a web page does.
+            mouse: UIMouseState = self.input_state.mouse
+            if self.dd_open_id == self.dd_id and mouse.left_pressed() == 1:
+                on_field: i32 = mouse.is_over_xy(self.dd_x, self.dd_y, self.dd_w, self.dd_h)
+                on_list: i32 = mouse.is_over_xy(self.dd_x, self.dd_y + self.dd_h, self.dd_w, list_h)
+                if on_field == 0 and on_list == 0:
+                    self.dd_open_id = 0
+            self.leave_layer()
+            self.dd_in_layer = 0
 
     # ---------------------------------------------------------------
     # Modal — responsive: auto-centers on canvas_w/canvas_h every frame,
@@ -865,8 +887,12 @@ attach SoorynApp:
         if self.md_active == 1:
             return 0
         self.md_active = 1
+        self.modal_now = 1
+        self.enter_layer(SOORYN_LAYER_MODAL)
         mx: i32 = (self.canvas_w - width) / 2
         my: i32 = (self.canvas_h - height) / 2
+        # A raised surface over a darkened page.
+        self.elevation(mx, my, width, height, 0, 8)
         commands: UIDrawList = self.commands
         # Backdrop over the whole canvas
         commands.push_fill_rect(0, 0, self.canvas_w, self.canvas_h, self.theme.surface_active)
@@ -883,6 +909,7 @@ attach SoorynApp:
 
     fun modal_end(self):
         self.md_active = 0
+        self.leave_layer()
 
     # ---------------------------------------------------------------
     # Drag source / drop target. drag_source records (x, y, w, h,
@@ -894,7 +921,7 @@ attach SoorynApp:
     fun drag_source(self, x: i32, y: i32, width: i32, height: i32, payload: i64) -> i32:
         id: i64 = self.widget_id(150, x, y)
         mouse: UIMouseState = self.input_state.mouse
-        hovered: i32 = mouse.is_over_xy(x, y, width, height)
+        hovered: i32 = self.hit(x, y, width, height)
         if hovered == 1:
             self.set_hover(id)
             self.want_cursor(SOORYN_CURSOR_MOVE)
@@ -910,7 +937,7 @@ attach SoorynApp:
         if self.drag_id == 0:
             return 0
         mouse: UIMouseState = self.input_state.mouse
-        over: i32 = mouse.is_over_xy(x, y, width, height)
+        over: i32 = self.hit(x, y, width, height)
         if over == 1:
             commands: UIDrawList = self.commands
             commands.push_outline_rect(x, y, width, height, self.theme.accent, 2)

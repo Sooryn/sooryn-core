@@ -46,7 +46,7 @@ attach SoorynApp:
         id: i64 = self.mix_id(self.widget_id(130, x, y), kind as i64)
         focused: i32 = self.register_focusable(id)
         mouse: UIMouseState = self.input_state.mouse
-        hovered: i32 = mouse.is_over_xy(x, y, size, size)
+        hovered: i32 = self.hit(x, y, size, size)
         glow: i32 = self.anim_hover(id, hovered)
 
         if glow > 0:
@@ -77,7 +77,7 @@ attach SoorynApp:
     fun window_button(self, x: i32, y: i32, width: i32, height: i32, kind: i32, danger: i32) -> i32:
         id: i64 = self.mix_id(self.widget_id(131, x, y), kind as i64)
         mouse: UIMouseState = self.input_state.mouse
-        hovered: i32 = mouse.is_over_xy(x, y, width, height)
+        hovered: i32 = self.hit(x, y, width, height)
         glow: i32 = self.anim_hover(id, hovered)
 
         tint: UIColor = self.theme.muted_text
@@ -143,7 +143,7 @@ attach SoorynApp:
 
         id: i64 = self.mix_id(self.widget_id(132, self.dt_x, y), index as i64)
         mouse: UIMouseState = self.input_state.mouse
-        hovered: i32 = mouse.is_over_xy(x, y, w, h)
+        hovered: i32 = self.hit(x, y, w, h)
         active: i32 = 0
         if self.dt_active_ptr != 0 and Memory.read_i32(self.dt_active_ptr) == index:
             active = 1

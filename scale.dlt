@@ -52,6 +52,7 @@ attach SoorynApp:
             return 1
         self.display_scale = value
         self.commands.set_scale(value)
+        self.overlay.set_scale(value)
         # The default face has to be rebuilt at the new size, or text stays
         # the one thing on screen that did not scale.
         if self.uses_default_font == 1:

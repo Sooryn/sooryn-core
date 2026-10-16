@@ -25,6 +25,8 @@ load sooryn/focus
 load sooryn/textedit
 load sooryn/clipboard
 load sooryn/cursor
+load sooryn/hit
+load sooryn/layers
 load sooryn/textmap
 load sooryn/table
 load sooryn/anim

@@ -1,0 +1,90 @@
+# ============================
+#  Sooryn Layers
+# ============================
+# A web page draws an open menu and a dialog above everything else, and
+# nothing behind them takes the pointer. An immediate-mode frame draws in
+# call order, so without help an open dropdown is covered by every widget
+# drawn after it, cut off by its panel's clip, and a modal's backdrop does
+# not stop clicks reaching the widgets it darkens.
+#
+# Layers fix both halves:
+#
+#   drawing  Popups and modals record into a second draw list, the overlay,
+#            which is rendered after the frame with no clip. Every widget
+#            already writes through self.commands, so entering a layer
+#            swaps the overlay in and leaving it swaps the frame back.
+#
+#   input    hit() takes the layer each widget is drawn in. A modal open
+#            in the previous frame blocks everything below it; a popup
+#            blocks its own rectangle. The previous frame is the one that
+#            is known in full when a widget drawn early asks this frame.
+
+SOORYN_LAYER_BASE: i32 = 0
+SOORYN_LAYER_POPUP: i32 = 1
+SOORYN_LAYER_MODAL: i32 = 2
+
+attach SoorynApp:
+    # Start drawing into the overlay at this layer. Nested calls stay in
+    # the overlay; the layer only ever rises.
+    fun enter_layer(self, layer: i32):
+        if self.layer_depth == 0:
+            self.layer_saved_commands = self.commands
+            self.commands = self.overlay
+            self.layer_saved_hit_top = self.hit_clip_top
+            self.hit_clip_top = 0
+            self.layer_saved = self.layer_now
+        self.layer_depth = self.layer_depth + 1
+        if layer > self.layer_now:
+            self.layer_now = layer
+
+    fun leave_layer(self):
+        if self.layer_depth <= 0:
+            return
+        self.layer_depth = self.layer_depth - 1
+        if self.layer_depth == 0:
+            self.overlay = self.commands
+            self.commands = self.layer_saved_commands
+            self.hit_clip_top = self.layer_saved_hit_top
+            self.layer_now = self.layer_saved
+
+    # Whether input reaching this layer is blocked by a layer above it.
+    fun layer_blocks_pointer(self) -> i32:
+        if self.layer_now < SOORYN_LAYER_MODAL and self.modal_prev == 1:
+            return 1
+        if self.layer_now < SOORYN_LAYER_POPUP and self.popup_prev == 1:
+            mouse: UIMouseState = self.input_state.mouse
+            if mouse.is_over_xy(self.popup_prev_x, self.popup_prev_y, self.popup_prev_w, self.popup_prev_h) == 1:
+                return 1
+        return 0
+
+    # A popup drawn this frame claims its rectangle for the next one.
+    fun claim_popup(self, id: i64, x: i32, y: i32, width: i32, height: i32):
+        self.popup_now = 1
+        self.popup_now_id = id
+        self.popup_now_x = x
+        self.popup_now_y = y
+        self.popup_now_w = width
+        self.popup_now_h = height
+
+    # Called by begin_frame: what this frame drew becomes what the next one
+    # knows about.
+    fun roll_layers(self):
+        self.modal_prev = self.modal_now
+        self.modal_now = 0
+        self.popup_prev = self.popup_now
+        self.popup_prev_id = self.popup_now_id
+        self.popup_prev_x = self.popup_now_x
+        self.popup_prev_y = self.popup_now_y
+        self.popup_prev_w = self.popup_now_w
+        self.popup_prev_h = self.popup_now_h
+        self.popup_now = 0
+        self.popup_now_id = 0
+        self.layer_depth = 0
+        self.layer_now = SOORYN_LAYER_BASE
+        self.overlay.clear()
+
+    # Called by end(): a layer left open by mistake is closed, so the frame
+    # list is back in place before rendering.
+    fun close_layers(self):
+        while self.layer_depth > 0:
+            self.leave_layer()

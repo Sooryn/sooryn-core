@@ -1,0 +1,124 @@
+import sooryn
+
+# Layers: an open dropdown and a modal sit above everything, are not cut by
+# their panel's clip, and nothing behind them takes the pointer.
+
+g_selected: i64 = 0
+g_base_clicks: i32 = 0
+g_modal_clicks: i32 = 0
+g_late_clicks: i32 = 0
+g_picked: i32 = 0
+
+fun modal_frame(app: SoorynApp, show: i32):
+    if app.begin_offscreen() == 1:
+        g_base_clicks = g_base_clicks + app.button(20, 20, 120, 32, "Behind")
+        if show == 1 and app.modal_begin(200, 120, "Dialog") == 1:
+            g_modal_clicks = g_modal_clicks + app.button(130, 120, 100, 30, "OK")
+            app.modal_end()
+        app.end()
+
+fun dropdown_frame(app: SoorynApp):
+    if app.begin_offscreen() == 1:
+        if app.dropdown_begin(20, 20, 160, 28, g_selected, "Pick") == 1:
+            g_picked = g_picked + app.dropdown_item("One")
+            g_picked = g_picked + app.dropdown_item("Two")
+            g_picked = g_picked + app.dropdown_item("Three")
+        app.dropdown_end()
+        # Drawn after the dropdown, right where its list opens.
+        g_late_clicks = g_late_clicks + app.button(20, 60, 160, 40, "Late")
+        app.end()
+
+fun clipped_frame(app: SoorynApp):
+    if app.begin_offscreen() == 1:
+        app.panel_begin(0, 0, 220, 60)
+        if app.dropdown_begin(10, 10, 150, 28, g_selected, "Pick") == 1:
+            g_picked = g_picked + app.dropdown_item("One")
+            g_picked = g_picked + app.dropdown_item("Two")
+            g_picked = g_picked + app.dropdown_item("Three")
+        app.dropdown_end()
+        app.panel_end()
+        app.end()
+
+fun click(app: SoorynApp, x: i32, y: i32, kind: i32):
+    app.inject_mouse_move(x, y)
+    app.inject_left_down()
+    if kind == 0:
+        modal_frame(app, 1)
+    elif kind == 1:
+        dropdown_frame(app)
+    else:
+        clipped_frame(app)
+    app.inject_left_up()
+    if kind == 0:
+        modal_frame(app, 1)
+    elif kind == 1:
+        dropdown_frame(app)
+    else:
+        clipped_frame(app)
+
+fun main() -> i32:
+    app: SoorynApp = SoorynApp.headless(400, 240)
+    g_selected = app.alloc_int(-1)
+
+    # ---- A modal blocks what is behind it, and its own widgets work.
+    modal_frame(app, 0)
+    click(app, 40, 30, 0)
+    if g_base_clicks != 0:
+        # The first frame of a modal cannot know about it yet; from the
+        # second on it must block.
+        g_base_clicks = 0
+    click(app, 40, 30, 0)
+    if g_base_clicks != 0:
+        print("sooryn layers: a widget behind an open modal took a click")
+        return 1
+    click(app, 170, 135, 0)
+    if g_modal_clicks != 1:
+        print("sooryn layers: a widget inside the modal did not take its click")
+        return 2
+
+    # ---- An open dropdown is above what is drawn after it and owns its list.
+    app2: SoorynApp = SoorynApp.headless(400, 240)
+    g_selected = app2.alloc_int(-1)
+    dropdown_frame(app2)
+    click(app2, 60, 30, 1)
+    dropdown_frame(app2)
+    if app2.pixel_at(100, 66) == app2.theme.accent:
+        print("sooryn layers: a widget drawn after the dropdown covered its open list")
+        return 3
+    click(app2, 60, 66, 1)
+    if g_late_clicks != 0:
+        print("sooryn layers: the widget under the open list took the click")
+        return 4
+    if Memory.read_i32(g_selected) != 0 or g_picked != 1:
+        print("sooryn layers: the list item under the pointer was not picked")
+        return 5
+
+    # ---- Pressing outside closes the list.
+    click(app2, 60, 30, 1)
+    click(app2, 350, 200, 1)
+    dropdown_frame(app2)
+    if app2.pixel_at(100, 66) != app2.theme.accent:
+        print("sooryn layers: pressing outside did not close the list")
+        return 6
+
+    # ---- A list that runs past its panel is drawn and clickable there.
+    app3: SoorynApp = SoorynApp.headless(400, 240)
+    g_selected = app3.alloc_int(-1)
+    g_picked = 0
+    clipped_frame(app3)
+    click(app3, 40, 20, 2)
+    clipped_frame(app3)
+    # Item "Three" is at y 94..122, below the panel's bottom edge at 60.
+    if app3.pixel_at(80, 108) == app3.theme.background:
+        print("sooryn layers: the open list was cut off by its panel")
+        return 7
+    click(app3, 80, 108, 2)
+    if Memory.read_i32(g_selected) != 2:
+        print("sooryn layers: an item past the panel's edge could not be picked")
+        return 8
+
+    app.destroy()
+    app2.destroy()
+    app3.destroy()
+    print("sooryn layers: ok")
+    return 0

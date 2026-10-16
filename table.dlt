@@ -131,7 +131,7 @@ attach SoorynApp:
         left: i32 = self._table_column_left(index)
 
         mouse: UIMouseState = self.input_state.mouse
-        hovered: i32 = mouse.is_over_xy(left, self.tb_y, w, self.tb_header_h)
+        hovered: i32 = self.hit(left, self.tb_y, w, self.tb_header_h)
 
         commands: UIDrawList = self.commands
         if hovered == 1:
@@ -188,7 +188,7 @@ attach SoorynApp:
         if self.tb_scroll_ptr != 0:
             wheel: f32 = self.input_state.mouse.wheel_y
             if wheel != 0.0:
-                if self.input_state.mouse.is_over_xy(self.tb_x, self.tb_y + self.tb_header_h, self.tb_w, self._table_body_height()) == 1:
+                if self.hit(self.tb_x, self.tb_y + self.tb_header_h, self.tb_w, self._table_body_height()) == 1:
                     wheeled: i32 = Memory.read_i32(self.tb_scroll_ptr) - ((wheel * 40.0) as i32)
                     limit: i32 = self._table_max_scroll()
                     if wheeled < 0:
@@ -257,7 +257,7 @@ attach SoorynApp:
         body_top: i32 = self.tb_y + self.tb_header_h
         hovered: i32 = 0
         if mouse.y >= body_top and mouse.y < self.tb_y + self.tb_h:
-            hovered = mouse.is_over_xy(self.tb_x, top, self.tb_w - 12, self.tb_row_height)
+            hovered = self.hit(self.tb_x, top, self.tb_w - 12, self.tb_row_height)
 
         commands: UIDrawList = self.commands
         if index == selected:
