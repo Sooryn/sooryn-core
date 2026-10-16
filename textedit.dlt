@@ -145,6 +145,11 @@ attach SoorynApp:
         room: i32 = max_len - len_now
         if add > room:
             add = room
+            # Back off to a character boundary: a field that is nearly full
+            # must not keep the first byte of a two-byte letter and become
+            # invalid UTF-8.
+            while add > 0 and (Memory.read_i8((value as i64) + (add as i64)) & 192) == 128:
+                add = add - 1
         if add <= 0:
             return len_now
 
@@ -172,13 +177,29 @@ attach SoorynApp:
         changed: i32 = 0
         extend: i32 = self.input_state.shift_down
 
-        # Ctrl+A selects everything. Ctrl+C/X/V wait on a clipboard in the
-        # window package; nothing here pretends they work.
+        # Ctrl+A selects everything; Ctrl+C, Ctrl+X and Ctrl+V copy, cut and
+        # paste through the application's clipboard (clipboard.dlt). The
+        # window system delivers them as the control characters 1, 3, 24, 22.
         if self.input_state.ctrl_down == 1:
             if Memory.strlen(self.input_state.typed_chars) > 0:
                 first: i8 = Memory.read_i8(self.input_state.typed_chars as i64)
                 if first == 1 as i8:
                     self.text_select_all(length)
+                elif first == 3 as i8:
+                    self.text_copy_selection(buf)
+                elif first == 24 as i8:
+                    if self.text_copy_selection(buf) == 1:
+                        self.text_delete_selection(buf, length)
+                        return 1
+                elif first == 22 as i8:
+                    pasted: str = self.clipboard_line()
+                    if Memory.strlen(pasted) > 0 or self.text_has_selection() == 1:
+                        before: i32 = length
+                        had_selection: i32 = self.text_has_selection()
+                        length = self.text_insert(buf, max_len, length, pasted)
+                        Memory.free(pasted as i64)
+                        if length != before or had_selection == 1:
+                            return 1
                 return 0
 
         if self.input_state.left_pressed == 1:

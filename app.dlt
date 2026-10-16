@@ -42,6 +42,10 @@ struct SoorynApp:
     # window moved to a display of another density follows it. An explicit
     # set_scale_percent turns it off: the application chose.
     follows_display_scale: i32 = 0
+
+    # ---- Clipboard (see clipboard.dlt) ----
+    clipboard_bytes: i64 = 0
+    clipboard_size: i64 = 0
     # The default face: SOORYN_FONT_SYSTEM for windowed applications (the
     # platform's interface typeface, as `system-ui` is on the web), and
     # SOORYN_FONT_BUILTIN for headless ones, whose pixels must not depend on
@@ -353,6 +357,7 @@ attach SoorynApp:
         self._free_textmap()
         self._free_toasts()
         self._free_system_font()
+        self._free_clipboard()
         if self.commands.is_valid() == 1:
             self.commands.destroy()
         if self.surface.is_valid() == 1:

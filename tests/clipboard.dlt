@@ -1,0 +1,107 @@
+import sooryn
+
+# Copy, cut and paste between text fields, through the application's
+# clipboard. The window system delivers Ctrl+A/C/X/V as the control
+# characters 1, 3, 24 and 22, so that is what is injected here.
+
+FIELD_X: i32 = 40
+FIELD_W: i32 = 240
+FIELD_H: i32 = 28
+TOP_Y: i32 = 40
+BOTTOM_Y: i32 = 120
+
+fun buf_is(buf: i64, expected: str) -> i32:
+    n: i64 = Memory.strlen(expected)
+    if Memory.strlen(buf as str) != n:
+        return 0
+    i: i64 = 0
+    while i < n:
+        if Memory.read_i8(buf + i) != Memory.read_i8((expected as i64) + i):
+            return 0
+        i = i + 1
+    return 1
+
+fun frame(app: SoorynApp, top: i64, bottom: i64, bottom_max: i32):
+    if app.begin_offscreen() == 1:
+        app.text_input(FIELD_X, TOP_Y, FIELD_W, FIELD_H, top, 63)
+        app.text_input(FIELD_X, BOTTOM_Y, FIELD_W, FIELD_H, bottom, bottom_max)
+        app.end()
+
+fun click(app: SoorynApp, y: i32, top: i64, bottom: i64, bottom_max: i32):
+    app.inject_mouse_move(FIELD_X + 10, y + 14)
+    app.inject_left_down()
+    frame(app, top, bottom, bottom_max)
+    app.inject_left_up()
+    frame(app, top, bottom, bottom_max)
+
+fun control(app: SoorynApp, code: i32, top: i64, bottom: i64, bottom_max: i32):
+    key: i64 = Memory.malloc_zeroed(2)
+    Memory.write_i8(key, code as i8)
+    app.inject_modifiers(0, 1, 0)
+    app.inject_text(key as str)
+    frame(app, top, bottom, bottom_max)
+    app.inject_modifiers(0, 0, 0)
+    Memory.free(key)
+
+fun main() -> i32:
+    app: SoorynApp = SoorynApp.headless(400, 200)
+    top: i64 = app.alloc_buf(64)
+    bottom: i64 = app.alloc_buf(64)
+
+    # Type into the top field, select all, copy.
+    click(app, TOP_Y, top, bottom, 63)
+    app.inject_text("Hello, Sooryn")
+    frame(app, top, bottom, 63)
+    control(app, 1, top, bottom, 63)
+    control(app, 3, top, bottom, 63)
+    if Str.equals(app.clipboard_text(), "Hello, Sooryn") == false:
+        print("sooryn clipboard: Ctrl+C did not copy the selection")
+        return 1
+    if buf_is(top, "Hello, Sooryn") == 0:
+        print("sooryn clipboard: copying changed the field")
+        return 2
+
+    # Paste into the bottom field.
+    click(app, BOTTOM_Y, top, bottom, 63)
+    control(app, 22, top, bottom, 63)
+    if buf_is(bottom, "Hello, Sooryn") == 0:
+        print("sooryn clipboard: Ctrl+V did not paste into the other field")
+        return 3
+
+    # Pasting over a selection replaces it.
+    control(app, 1, top, bottom, 63)
+    app.set_clipboard_text("Dolet")
+    control(app, 22, top, bottom, 63)
+    if buf_is(bottom, "Dolet") == 0:
+        print("sooryn clipboard: pasting over a selection did not replace it")
+        return 4
+
+    # Cut: copies, then removes the selection.
+    control(app, 1, top, bottom, 63)
+    control(app, 24, top, bottom, 63)
+    if buf_is(bottom, "") == 0 or Str.equals(app.clipboard_text(), "Dolet") == false:
+        print("sooryn clipboard: Ctrl+X did not cut")
+        return 5
+
+    # Pasted text becomes one line: breaks and tabs turn into spaces.
+    app.set_clipboard_text("one\r\ntwo\tthree\nfour")
+    control(app, 22, top, bottom, 63)
+    if buf_is(bottom, "one two three four") == 0:
+        print("sooryn clipboard: a multi-line paste was not made one line")
+        return 6
+
+    # A nearly full field keeps whole characters: room for 3 bytes and
+    # "ab" + a two-byte letter + "c" pastes "ab" and stops before the letter
+    # rather than keeping half of it.
+    small: i64 = app.alloc_buf(8)
+    control(app, 1, top, small, 3)
+    app.set_clipboard_text("abéc")
+    click(app, BOTTOM_Y, top, small, 3)
+    control(app, 22, top, small, 3)
+    if buf_is(small, "ab") == 0:
+        print("sooryn clipboard: a full field kept half of a character")
+        return 7
+
+    app.destroy()
+    print("sooryn clipboard: ok")
+    return 0

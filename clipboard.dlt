@@ -1,0 +1,76 @@
+# ============================
+#  Sooryn Clipboard
+# ============================
+# Copy, cut and paste between the application's text fields. The clipboard
+# lives in the application today, so text moves between fields of the same
+# program. When the window package gains a system clipboard, this file is
+# the one place that changes: the text fields already go through it.
+
+attach SoorynApp:
+    # Put text on the clipboard (a copy is kept).
+    fun set_clipboard_text(self, value: str):
+        self._free_clipboard()
+        size: i64 = Memory.strlen(value)
+        if size == 0:
+            return
+        bytes: i64 = Memory.malloc(size + 1)
+        if bytes == 0:
+            return
+        Memory.copy(bytes, value as i64, size)
+        Memory.write_i8(bytes + size, 0 as i8)
+        self.clipboard_bytes = bytes
+        self.clipboard_size = size
+
+    # What the clipboard holds, valid until it next changes; "" when empty.
+    fun clipboard_text(self) -> str:
+        if self.clipboard_bytes == 0:
+            return ""
+        return self.clipboard_bytes as str
+
+    # The clipboard as one line for a single-line field, in a fresh buffer the
+    # caller frees: line breaks and tabs become spaces, other control
+    # characters are dropped, and the bytes of every character are kept
+    # together.
+    fun clipboard_line(self) -> str:
+        size: i64 = self.clipboard_size
+        out: i64 = Memory.malloc_zeroed(size + 1)
+        if out == 0 or self.clipboard_bytes == 0:
+            return out as str
+        written: i64 = 0
+        i: i64 = 0
+        while i < size:
+            b: i32 = (Memory.read_i8(self.clipboard_bytes + i) as i32) & 255
+            if b == 13 and i + 1 < size and ((Memory.read_i8(self.clipboard_bytes + i + 1) as i32) & 255) == 10:
+                i = i + 1
+                b = 10
+            if b == 10 or b == 13 or b == 9:
+                Memory.write_i8(out + written, 32 as i8)
+                written = written + 1
+            elif b >= 32 and b != 127:
+                Memory.write_i8(out + written, b as i8)
+                written = written + 1
+            i = i + 1
+        Memory.write_i8(out + written, 0 as i8)
+        return out as str
+
+    # Copy the focused field's selection. Returns 1 if there was one.
+    fun text_copy_selection(self, buf: i64) -> i32:
+        if self.text_has_selection() == 0:
+            return 0
+        start: i32 = self.text_sel_start()
+        end: i32 = self.text_sel_end()
+        size: i64 = (end - start) as i64
+        piece: i64 = Memory.malloc(size + 1)
+        if piece == 0:
+            return 0
+        Memory.copy(piece, buf + (start as i64), size)
+        Memory.write_i8(piece + size, 0 as i8)
+        self.set_clipboard_text(piece as str)
+        Memory.free(piece)
+        return 1
+
+    fun _free_clipboard(self):
+        if self.clipboard_bytes != 0:
+            Memory.free(self.clipboard_bytes)
+        self.clipboard_bytes = 0
+        self.clipboard_size = 0

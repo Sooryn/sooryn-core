@@ -299,6 +299,19 @@ app.use_font(face)
 `examples/arabic.dlt` is a working application that does exactly this and
 prepares nothing itself.
 
+## Clipboard
+
+Text fields copy, cut and paste with Ctrl+C, Ctrl+X and Ctrl+V, and Ctrl+A
+selects everything. A paste replaces the selection, and becomes one line in a
+single-line field: line breaks and tabs turn into spaces, and other control
+characters are dropped. A field that is nearly full keeps whole characters,
+never the first byte of a two-byte letter.
+
+The clipboard lives in the application for now, so text moves between the
+fields of one program. `app.set_clipboard_text` and `app.clipboard_text` reach
+it from code. When the window package offers the system clipboard,
+`clipboard.dlt` is the only file that changes.
+
 ## Frame reuse
 
 A browser does not repaint a page that did not change, and neither does

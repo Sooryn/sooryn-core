@@ -23,6 +23,7 @@ load sooryn/system_font
 load sooryn/frames
 load sooryn/focus
 load sooryn/textedit
+load sooryn/clipboard
 load sooryn/textmap
 load sooryn/table
 load sooryn/anim
