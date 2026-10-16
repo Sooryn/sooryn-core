@@ -1,15 +1,39 @@
 # ============================
 #  Sooryn Clipboard
 # ============================
-# Copy, cut and paste between the application's text fields. The clipboard
-# lives in the application today, so text moves between fields of the same
-# program. When the window package gains a system clipboard, this file is
-# the one place that changes: the text fields already go through it.
+# Copy, cut and paste through the system clipboard (window 2.1), so text
+# moves between a Sooryn field and any other program, both ways.
+#
+# A headless application keeps a clipboard of its own instead: a test must
+# never change, or depend on, the clipboard of the person running it.
+#
+# Sooryn keeps a copy of what it last put on or read from the clipboard. If
+# the system refuses a write (another program holding it open too long), that
+# copy is what the next paste uses, so a copy inside the application is never
+# lost; the next successful write hands the clipboard back to the system.
 
 attach SoorynApp:
-    # Put text on the clipboard (a copy is kept).
+    # Put text on the clipboard.
     fun set_clipboard_text(self, value: str):
+        self._keep_clipboard(value)
+        if self.is_headless == 1:
+            return
+        if window_clipboard_set_text(value) == 1:
+            self.clipboard_local_wins = 0
+        else:
+            self.clipboard_local_wins = 1
+
+    # The copy Sooryn reads from: the system's text for a windowed
+    # application, unless the last write to it failed.
+    fun _refresh_clipboard(self):
+        if self.is_headless == 1 or self.clipboard_local_wins == 1:
+            return
+        self._keep_clipboard(window_clipboard_get_text())
+
+    fun _keep_clipboard(self, value: str):
         self._free_clipboard()
+        if (value as i64) == 0:
+            return
         size: i64 = Memory.strlen(value)
         if size == 0:
             return
@@ -21,8 +45,10 @@ attach SoorynApp:
         self.clipboard_bytes = bytes
         self.clipboard_size = size
 
-    # What the clipboard holds, valid until it next changes; "" when empty.
+    # What the clipboard holds, valid until it is next read or changed; ""
+    # when it is empty or holds no text.
     fun clipboard_text(self) -> str:
+        self._refresh_clipboard()
         if self.clipboard_bytes == 0:
             return ""
         return self.clipboard_bytes as str
@@ -32,6 +58,7 @@ attach SoorynApp:
     # characters are dropped, and the bytes of every character are kept
     # together.
     fun clipboard_line(self) -> str:
+        self._refresh_clipboard()
         size: i64 = self.clipboard_size
         out: i64 = Memory.malloc_zeroed(size + 1)
         if out == 0 or self.clipboard_bytes == 0:

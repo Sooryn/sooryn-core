@@ -4,10 +4,9 @@
 # A web page shows a hand over what can be clicked and an I-beam over text.
 # Every frame Sooryn works out which cursor the widget under the pointer
 # wants: interactive widgets ask for one when they are hovered, and the last
-# one drawn (the one on top) wins. app.cursor_shape() reports the result.
-#
-# The window package cannot change the cursor yet (SOORYN_FINDINGS item 8).
-# When it can, end() hands this value to it and nothing else changes.
+# one drawn (the one on top) wins. app.cursor_shape() reports the result, and
+# end() hands it to the window (window 2.1), whose WINDOW_CURSOR_* values are
+# the same numbers.
 
 SOORYN_CURSOR_ARROW: i32 = 0
 SOORYN_CURSOR_HAND: i32 = 1
@@ -15,6 +14,14 @@ SOORYN_CURSOR_TEXT: i32 = 2
 SOORYN_CURSOR_RESIZE_EW: i32 = 3
 SOORYN_CURSOR_RESIZE_NS: i32 = 4
 SOORYN_CURSOR_MOVE: i32 = 5
+# For custom widgets: busy, busy but usable, precise picking, refused, and
+# the two diagonal resize directions.
+SOORYN_CURSOR_WAIT: i32 = 6
+SOORYN_CURSOR_PROGRESS: i32 = 7
+SOORYN_CURSOR_CROSSHAIR: i32 = 8
+SOORYN_CURSOR_NOT_ALLOWED: i32 = 9
+SOORYN_CURSOR_RESIZE_NWSE: i32 = 10
+SOORYN_CURSOR_RESIZE_NESW: i32 = 11
 
 attach SoorynApp:
     # The cursor the last frame asked for.

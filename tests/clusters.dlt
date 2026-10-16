@@ -1,0 +1,146 @@
+import sooryn
+
+# The caret rests between whole characters, as a browser's does. Arrows and
+# Delete step over a character as the reader sees it (a letter with its
+# accents or harakat, an emoji with its skin tone or joined parts, a flag);
+# Backspace removes one code point, so a mark goes without its letter while
+# an emoji or a flag still goes whole.
+
+FIELD_X: i32 = 20
+FIELD_Y: i32 = 20
+FIELD_W: i32 = 360
+FIELD_H: i32 = 28
+
+fun buf_is(buf: i64, expected: str) -> i32:
+    n: i64 = Memory.strlen(expected)
+    if Memory.strlen(buf as str) != n:
+        return 0
+    i: i64 = 0
+    while i < n:
+        if Memory.read_i8(buf + i) != Memory.read_i8((expected as i64) + i):
+            return 0
+        i = i + 1
+    return 1
+
+fun frame(app: SoorynApp, buf: i64):
+    if app.begin_offscreen() == 1:
+        app.text_input(FIELD_X, FIELD_Y, FIELD_W, FIELD_H, buf, 63)
+        app.end()
+
+# Put `value` in the field with the caret at byte `caret`.
+fun load(app: SoorynApp, buf: i64, value: str, caret: i32):
+    n: i64 = Memory.strlen(value)
+    Memory.copy(buf, value as i64, n)
+    Memory.write_i8(buf + n, 0 as i8)
+    frame(app, buf)
+    app.text_caret = caret
+    app.text_anchor = caret
+
+fun left(app: SoorynApp, buf: i64):
+    app.inject_arrow_left()
+    frame(app, buf)
+
+fun right(app: SoorynApp, buf: i64):
+    app.inject_arrow_right()
+    frame(app, buf)
+
+fun backspace(app: SoorynApp, buf: i64):
+    app.inject_backspace()
+    frame(app, buf)
+
+fun delete(app: SoorynApp, buf: i64):
+    app.inject_delete()
+    frame(app, buf)
+
+fun main() -> i32:
+    app: SoorynApp = SoorynApp.headless(400, 80)
+    buf: i64 = app.alloc_buf(64)
+    app.inject_mouse_move(FIELD_X + 10, FIELD_Y + 14)
+    app.inject_left_down()
+    frame(app, buf)
+    app.inject_left_up()
+    frame(app, buf)
+
+    # A two-byte letter: one arrow press crosses it, never half of it.
+    load(app, buf, "éa", 3)
+    left(app, buf)
+    left(app, buf)
+    if app.text_caret != 0:
+        print("sooryn clusters: the arrow stopped inside a two-byte letter")
+        return 1
+    load(app, buf, "aé", 3)
+    backspace(app, buf)
+    if buf_is(buf, "a") == 0:
+        print("sooryn clusters: Backspace left half of a two-byte letter")
+        return 2
+
+    # A letter with a combining accent is one character to the arrows; Backspace
+    # takes the accent alone.
+    load(app, buf, "éx", 0)
+    right(app, buf)
+    if app.text_caret != 3:
+        print("sooryn clusters: the arrow split a letter from its accent")
+        return 3
+    load(app, buf, "é", 3)
+    backspace(app, buf)
+    if buf_is(buf, "e") == 0:
+        print("sooryn clusters: Backspace did not take just the accent")
+        return 4
+
+    # Arabic: a harakah travels with its letter, and Backspace removes it alone.
+    load(app, buf, "بَت", 0)
+    right(app, buf)
+    if app.text_caret != 4:
+        print("sooryn clusters: the arrow split a letter from its harakah")
+        return 5
+    load(app, buf, "بَ", 4)
+    backspace(app, buf)
+    if buf_is(buf, "ب") == 0:
+        print("sooryn clusters: Backspace did not take just the harakah")
+        return 6
+
+    # A family joined by zero-width joiners goes in one Backspace, and one
+    # arrow press crosses it.
+    load(app, buf, "👨‍👩‍👧", 18)
+    left(app, buf)
+    if app.text_caret != 0:
+        print("sooryn clusters: the arrow stopped inside a joined emoji")
+        return 7
+    app.inject_end()
+    frame(app, buf)
+    backspace(app, buf)
+    if buf_is(buf, "") == 0:
+        print("sooryn clusters: Backspace took part of a joined emoji")
+        return 8
+
+    # An emoji with a skin tone goes in one Delete.
+    load(app, buf, "👍🏽x", 0)
+    delete(app, buf)
+    if buf_is(buf, "x") == 0:
+        print("sooryn clusters: Delete split an emoji from its skin tone")
+        return 9
+
+    # Flags: two regional indicators each, and two flags side by side stay two.
+    load(app, buf, "🇵🇸🇯🇴", 0)
+    right(app, buf)
+    if app.text_caret != 8:
+        print("sooryn clusters: the arrow did not cross exactly one flag")
+        return 10
+    load(app, buf, "🇵🇸🇯🇴", 16)
+    backspace(app, buf)
+    if buf_is(buf, "🇵🇸") == 0:
+        print("sooryn clusters: Backspace did not take exactly one flag")
+        return 11
+
+    # Shift+Left selects the whole character too.
+    load(app, buf, "aبَ", 5)
+    app.inject_modifiers(1, 0, 0)
+    left(app, buf)
+    app.inject_modifiers(0, 0, 0)
+    if app.text_sel_start() != 1 or app.text_sel_end() != 5:
+        print("sooryn clusters: a selection stopped inside a character")
+        return 12
+
+    app.destroy()
+    print("sooryn clusters: ok")
+    return 0

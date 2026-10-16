@@ -88,6 +88,8 @@ struct SoorynApp:
     # ---- Clipboard (see clipboard.dlt) ----
     clipboard_bytes: i64 = 0
     clipboard_size: i64 = 0
+    # 1 after the system refused a write: Sooryn's copy is newer than it.
+    clipboard_local_wins: i32 = 0
     # The default face: SOORYN_FONT_SYSTEM for windowed applications (the
     # platform's interface typeface, as `system-ui` is on the web), and
     # SOORYN_FONT_BUILTIN for headless ones, whose pixels must not depend on
@@ -495,6 +497,9 @@ attach SoorynApp:
             self.hover_frames = 0
         self.resolve_focus_move()
         self.resolve_cursor()
+        if self.is_headless == 0:
+            # Shown over the client area only; the frame keeps its arrows.
+            window_set_cursor_shape(self.cursor_current)
         self.close_layers()
         canvas: DrawCanvas = self.surface.canvas()
         if canvas.is_valid() == 1:

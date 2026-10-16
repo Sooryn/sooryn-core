@@ -356,10 +356,18 @@ single-line field: line breaks and tabs turn into spaces, and other control
 characters are dropped. A field that is nearly full keeps whole characters,
 never the first byte of a two-byte letter.
 
-The clipboard lives in the application for now, so text moves between the
-fields of one program. `app.set_clipboard_text` and `app.clipboard_text` reach
-it from code. When the window package offers the system clipboard,
-`clipboard.dlt` is the only file that changes.
+It is the system clipboard (window 2.1), so text moves between a Sooryn field
+and any other program both ways, in any script. `app.set_clipboard_text` and
+`app.clipboard_text` reach it from code.
+
+A headless application keeps a clipboard of its own, so a test never changes
+the clipboard of the person running it. If the system refuses a write
+(another program holding the clipboard open), the next paste still gets what
+was copied.
+
+Only control characters are shortcuts. Ctrl is also held for AltGr, which
+types @, { or € on many keyboards, and that is text; any other Ctrl+letter
+types nothing.
 
 ## Pointer cursor
 
@@ -376,9 +384,12 @@ The last widget drawn under the pointer wins, so the one on top decides.
 `theme.pointer_cursor = 0` keeps the arrow over controls, as plain CSS does
 for `<button>`. `app.cursor_shape()` reports the result
 (`SOORYN_CURSOR_ARROW`, `HAND`, `TEXT`, `RESIZE_EW`, `RESIZE_NS`, `MOVE`), and
-`app.want_cursor(shape)` lets a custom widget ask for one. The window package
-cannot change the system cursor yet. When it can, `end()` hands it this
-value.
+`app.want_cursor(shape)` lets a custom widget ask for one, including `WAIT`,
+`PROGRESS`, `CROSSHAIR`, `NOT_ALLOWED`, `RESIZE_NWSE` and `RESIZE_NESW`.
+
+`end()` hands the result to the window (window 2.1), so it is the cursor on
+screen. It shows over the client area only; the frame keeps its own resize
+arrows.
 
 ## Frame reuse
 
@@ -705,10 +716,11 @@ end. Only one input can hold keyboard focus, so one set of caret state serves
 them all; the caller's contract is unchanged — still a byte buffer and a
 maximum length.
 
-- **Left/Right** move the caret, **Home/End** jump to either end, and
-  **Shift** with any of them extends the selection.
+- **Left/Right** move the caret one character, **Home/End** jump to either
+  end, and **Shift** with any of them extends the selection.
 - **Backspace** and **Delete** remove the selection when there is one, and
   otherwise the character before or after the caret.
+- **Ctrl+C, Ctrl+X, Ctrl+V** copy, cut and paste (see Clipboard).
 - Typing inserts at the caret, replacing the selection.
 - **Ctrl+A** selects everything.
 - Clicking places the caret at the pointer, and dragging extends a selection.
@@ -716,12 +728,17 @@ maximum length.
   pixel position rather than at a fixed advance, so it stays correct under a
   proportional face.
 
-Positions are byte offsets, which is correct for the ASCII the input layer
-delivers today. When the text package lands they become grapheme offsets, and
-no caller has to change, because none of them index the buffer themselves.
+A character is what the reader sees as one, as in a browser. The caret
+never rests inside one:
 
-Copy, cut and paste are not wired: they need an OS clipboard, which belongs in
-the `window` package. Nothing here pretends they work.
+- the arrows and Delete step over a letter with its accents or harakat, an
+  emoji with its skin tone or its zero-width-joined parts, and a flag;
+- Backspace removes one code point, as Chrome does, so a harakah or an accent
+  typed by mistake goes without its letter, while an emoji or a flag still
+  goes whole.
+
+Positions are byte offsets into the UTF-8 buffer, so callers still hand over
+a byte buffer and a maximum length. `tests/clusters.dlt` covers each case.
 
 ## Scrolling
 

@@ -102,6 +102,29 @@ fun main() -> i32:
         print("sooryn clipboard: a full field kept half of a character")
         return 7
 
+    # Only control characters are shortcuts. Ctrl+Z is no text, and AltGr
+    # (which holds Ctrl) types its character as text.
+    field: i64 = app.alloc_buf(16)
+    click(app, BOTTOM_Y, top, field, 15)
+    control(app, 26, top, field, 15)
+    if buf_is(field, "") == 0:
+        print("sooryn clipboard: Ctrl+Z put a control character in the field")
+        return 8
+    app.inject_modifiers(0, 1, 1)
+    app.inject_text("@")
+    frame(app, top, field, 15)
+    app.inject_modifiers(0, 0, 0)
+    if buf_is(field, "@") == 0:
+        print("sooryn clipboard: a character typed with AltGr was dropped")
+        return 9
+
+    # A headless application never writes the system clipboard: a test must
+    # not change the clipboard of whoever runs it.
+    app.set_clipboard_text("sooryn headless clipboard marker 7f3a")
+    if Str.equals(window_clipboard_get_text(), "sooryn headless clipboard marker 7f3a") == true:
+        print("sooryn clipboard: a headless application wrote the system clipboard")
+        return 10
+
     app.destroy()
     print("sooryn clipboard: ok")
     return 0
