@@ -415,6 +415,7 @@ attach SoorynApp:
         hovered: i32 = mouse.is_over_xy(x, y, width, height)
         if hovered == 1:
             self.set_hover(id)
+            self.want_cursor(SOORYN_CURSOR_TEXT)
 
         # Click to focus; click elsewhere to unfocus.
         if mouse.left_pressed() == 1:
@@ -572,6 +573,7 @@ attach SoorynApp:
         hovered_track: i32 = mouse.is_over_xy(x, y, w, height)
         if hovered_track == 1:
             self.set_hover(id)
+            self.want_cursor(SOORYN_CURSOR_ARROW)
 
         scroll: i32 = Memory.read_i32(scroll_ptr)
         max_scroll: i32 = content_h - view_h
@@ -895,6 +897,7 @@ attach SoorynApp:
         hovered: i32 = mouse.is_over_xy(x, y, width, height)
         if hovered == 1:
             self.set_hover(id)
+            self.want_cursor(SOORYN_CURSOR_MOVE)
         # Grab drag on press and retain the caller-owned payload until drop.
         if hovered == 1 and mouse.left_pressed() == 1:
             self.drag_id = id

@@ -24,6 +24,7 @@ load sooryn/frames
 load sooryn/focus
 load sooryn/textedit
 load sooryn/clipboard
+load sooryn/cursor
 load sooryn/textmap
 load sooryn/table
 load sooryn/anim
@@ -38,6 +39,12 @@ load sooryn/headless
 export SoorynTheme
 export SoorynLayout
 export SoorynApp
+export SOORYN_CURSOR_ARROW
+export SOORYN_CURSOR_HAND
+export SOORYN_CURSOR_TEXT
+export SOORYN_CURSOR_RESIZE_EW
+export SOORYN_CURSOR_RESIZE_NS
+export SOORYN_CURSOR_MOVE
 export SOORYN_FONT_SYSTEM
 export SOORYN_FONT_BUILTIN
 export SOORYN_DEFAULT_TEXT_SIZE

@@ -312,6 +312,25 @@ fields of one program. `app.set_clipboard_text` and `app.clipboard_text` reach
 it from code. When the window package offers the system clipboard,
 `clipboard.dlt` is the only file that changes.
 
+## Pointer cursor
+
+Every frame Sooryn works out the cursor the widget under the pointer wants,
+as a web page does:
+
+- a hand over buttons, checkboxes, toggles, radios, tabs, dropdowns, sliders,
+  sortable table headers and icon buttons;
+- an I-beam over text fields;
+- a move cursor over drag sources;
+- the arrow over scrollbars, window buttons and everything else.
+
+The last widget drawn under the pointer wins, so the one on top decides.
+`theme.pointer_cursor = 0` keeps the arrow over controls, as plain CSS does
+for `<button>`. `app.cursor_shape()` reports the result
+(`SOORYN_CURSOR_ARROW`, `HAND`, `TEXT`, `RESIZE_EW`, `RESIZE_NS`, `MOVE`), and
+`app.want_cursor(shape)` lets a custom widget ask for one. The window package
+cannot change the system cursor yet. When it can, `end()` hands it this
+value.
+
 ## Frame reuse
 
 A browser does not repaint a page that did not change, and neither does

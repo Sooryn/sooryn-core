@@ -9,6 +9,9 @@ SOORYN_TITLE_RULE: i32 = 2
 SOORYN_TITLE_MIN_RULE: i32 = 24
 
 struct SoorynTheme:
+    # 1: a hand over clickable controls (most web design systems); 0: the
+    # arrow everywhere but text, as plain CSS does for <button>.
+    pointer_cursor: i32 = 1
     background: UIColor = 0
     surface: UIColor = 0
     surface_hover: UIColor = 0

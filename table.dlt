@@ -135,6 +135,8 @@ attach SoorynApp:
 
         commands: UIDrawList = self.commands
         if hovered == 1:
+            # A header sorts when clicked.
+            self.want_control_cursor()
             commands.push_fill_rect(left, self.tb_y, w, self.tb_header_h, self.theme.surface_hover)
         commands.push_text(left + 8, self.tb_y + (self.tb_header_h - self.text_height()) / 2, label, self.theme.muted_text)
         if index > 0:

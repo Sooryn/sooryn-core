@@ -1,0 +1,46 @@
+import sooryn
+
+# The pointer cursor each frame asks for: a hand over controls, an I-beam
+# over text fields, the arrow everywhere else, and the theme can keep the
+# arrow over controls.
+
+g_buf: i64 = 0
+
+fun frame(app: SoorynApp, x: i32, y: i32) -> i32:
+    app.inject_mouse_move(x, y)
+    if app.begin_offscreen() == 1:
+        app.panel(0, 0, 400, 240)
+        app.button(20, 20, 120, 32, "Press")
+        app.text_input(20, 80, 200, 28, g_buf, 31)
+        app.end()
+    return app.cursor_shape()
+
+fun main() -> i32:
+    app: SoorynApp = SoorynApp.headless(400, 240)
+    g_buf = app.alloc_buf(32)
+
+    if frame(app, 300, 200) != SOORYN_CURSOR_ARROW:
+        print("sooryn cursor: empty space did not show the arrow")
+        return 1
+    if frame(app, 60, 36) != SOORYN_CURSOR_HAND:
+        print("sooryn cursor: a button did not show the hand")
+        return 2
+    if frame(app, 60, 94) != SOORYN_CURSOR_TEXT:
+        print("sooryn cursor: a text field did not show the I-beam")
+        return 3
+    # Leaving resets it the next frame.
+    if frame(app, 300, 200) != SOORYN_CURSOR_ARROW:
+        print("sooryn cursor: the cursor stuck after the pointer left")
+        return 4
+
+    app.theme.pointer_cursor = 0
+    if frame(app, 60, 36) != SOORYN_CURSOR_ARROW:
+        print("sooryn cursor: the theme could not keep the arrow over controls")
+        return 5
+    if frame(app, 60, 94) != SOORYN_CURSOR_TEXT:
+        print("sooryn cursor: text fields lost the I-beam with pointer_cursor off")
+        return 6
+
+    app.destroy()
+    print("sooryn cursor: ok")
+    return 0

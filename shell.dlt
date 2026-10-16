@@ -96,6 +96,7 @@ attach SoorynApp:
 
         if hovered == 1:
             self.set_hover(id)
+            self.want_cursor(SOORYN_CURSOR_ARROW)
         if hovered == 1 and mouse.left_pressed() == 1:
             return 1
         return 0

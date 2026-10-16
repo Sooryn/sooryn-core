@@ -1,0 +1,37 @@
+# ============================
+#  Sooryn Pointer Cursor
+# ============================
+# A web page shows a hand over what can be clicked and an I-beam over text.
+# Every frame Sooryn works out which cursor the widget under the pointer
+# wants: interactive widgets ask for one when they are hovered, and the last
+# one drawn (the one on top) wins. app.cursor_shape() reports the result.
+#
+# The window package cannot change the cursor yet (SOORYN_FINDINGS item 8).
+# When it can, end() hands this value to it and nothing else changes.
+
+SOORYN_CURSOR_ARROW: i32 = 0
+SOORYN_CURSOR_HAND: i32 = 1
+SOORYN_CURSOR_TEXT: i32 = 2
+SOORYN_CURSOR_RESIZE_EW: i32 = 3
+SOORYN_CURSOR_RESIZE_NS: i32 = 4
+SOORYN_CURSOR_MOVE: i32 = 5
+
+attach SoorynApp:
+    # The cursor the last frame asked for.
+    fun cursor_shape(self) -> i32:
+        return self.cursor_current
+
+    # Ask for a cursor while the pointer is over something this frame.
+    fun want_cursor(self, shape: i32):
+        self.cursor_wanted = shape
+
+    # What a hovered control asks for: a hand, unless the theme keeps the
+    # arrow over controls (as CSS does for <button> by default).
+    fun want_control_cursor(self):
+        if self.theme.pointer_cursor == 1:
+            self.cursor_wanted = SOORYN_CURSOR_HAND
+        else:
+            self.cursor_wanted = SOORYN_CURSOR_ARROW
+
+    fun resolve_cursor(self):
+        self.cursor_current = self.cursor_wanted
