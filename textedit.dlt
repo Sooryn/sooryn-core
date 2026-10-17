@@ -175,6 +175,82 @@ attach SoorynApp:
             p = self.text_next_cluster(buf, length, p)
         return start
 
+    # ---------------------------------------------------------------
+    # Words
+    # ---------------------------------------------------------------
+    # The class of the character starting at `position`: space, word
+    # (letters and digits of any script, with their marks) or punctuation.
+    fun _text_class_at(self, buf: i64, length: i32, position: i32) -> i32:
+        code: Utf8Char = self._text_code_at(buf, length, position)
+        return sooryn_char_class(code.codepoint)
+
+    # The start of the word before `position` (Ctrl+Left, Ctrl+Backspace):
+    # back over spaces, then over a run of one class.
+    fun text_word_left(self, buf: i64, length: i32, position: i32) -> i32:
+        p: i32 = position
+        q: i32 = 0
+        while p > 0:
+            q = self.text_prev_cluster(buf, length, p)
+            if self._text_class_at(buf, length, q) != SOORYN_CHAR_SPACE:
+                break
+            p = q
+        if p <= 0:
+            return 0
+        kind: i32 = self._text_class_at(buf, length, self.text_prev_cluster(buf, length, p))
+        while p > 0:
+            q = self.text_prev_cluster(buf, length, p)
+            if self._text_class_at(buf, length, q) != kind:
+                break
+            p = q
+        return p
+
+    # Ctrl+Right, Ctrl+Delete. On Windows: over the rest of this run, then
+    # over spaces, to the start of the next word. Elsewhere: over spaces,
+    # then over a run, to the end of the word.
+    fun text_word_right(self, buf: i64, length: i32, position: i32) -> i32:
+        p: i32 = position
+        if p >= length:
+            return length
+        if self.text_word_ends == 1:
+            while p < length and self._text_class_at(buf, length, p) == SOORYN_CHAR_SPACE:
+                p = self.text_next_cluster(buf, length, p)
+            if p >= length:
+                return length
+            kind: i32 = self._text_class_at(buf, length, p)
+            while p < length and self._text_class_at(buf, length, p) == kind:
+                p = self.text_next_cluster(buf, length, p)
+            return p
+        first: i32 = self._text_class_at(buf, length, p)
+        if first != SOORYN_CHAR_SPACE:
+            while p < length and self._text_class_at(buf, length, p) == first:
+                p = self.text_next_cluster(buf, length, p)
+        while p < length and self._text_class_at(buf, length, p) == SOORYN_CHAR_SPACE:
+            p = self.text_next_cluster(buf, length, p)
+        return p
+
+    # Select the run of one class around `position` (a double click).
+    fun text_select_word_at(self, buf: i64, length: i32, position: i32):
+        if length <= 0:
+            self.text_caret = 0
+            self.text_anchor = 0
+            return
+        at: i32 = position
+        if at >= length:
+            at = self.text_prev_cluster(buf, length, length)
+        kind: i32 = self._text_class_at(buf, length, at)
+        start: i32 = at
+        q: i32 = 0
+        while start > 0:
+            q = self.text_prev_cluster(buf, length, start)
+            if self._text_class_at(buf, length, q) != kind:
+                break
+            start = q
+        end: i32 = at
+        while end < length and self._text_class_at(buf, length, end) == kind:
+            end = self.text_next_cluster(buf, length, end)
+        self.text_anchor = start
+        self.text_caret = end
+
     # Where Backspace deletes back to: one code point, unless that would cut
     # an emoji or a flag apart.
     fun text_backspace_from(self, buf: i64, length: i32, position: i32) -> i32:
@@ -255,6 +331,8 @@ attach SoorynApp:
         length: i32 = self.text_length(buf, max_len)
         changed: i32 = 0
         extend: i32 = self.input_state.shift_down
+        words: i32 = self.input_state.ctrl_down
+        self.text_history_sync(buf, length)
 
         # Ctrl+A selects everything; Ctrl+C, Ctrl+X and Ctrl+V copy, cut and
         # paste through the clipboard (clipboard.dlt). The window system
@@ -268,55 +346,123 @@ attach SoorynApp:
                 first: i8 = Memory.read_i8(self.input_state.typed_chars as i64)
                 if first == 1 as i8:
                     self.text_select_all(length)
+                    self.text_history_break()
                 elif first == 3 as i8:
                     self.text_copy_selection(buf)
                 elif first == 24 as i8:
-                    if self.text_copy_selection(buf) == 1:
-                        self.text_delete_selection(buf, length)
+                    if self.text_has_selection() == 1:
+                        self.text_history_before(buf, length, SOORYN_EDIT_OTHER, 0)
+                        self.text_copy_selection(buf)
+                        length = self.text_delete_selection(buf, length)
+                        self.text_history_after(buf, length)
                         return 1
                 elif first == 22 as i8:
                     pasted: str = self.clipboard_line()
                     if Memory.strlen(pasted) > 0 or self.text_has_selection() == 1:
-                        before: i32 = length
-                        had_selection: i32 = self.text_has_selection()
+                        self.text_history_before(buf, length, SOORYN_EDIT_OTHER, 0)
                         length = self.text_insert(buf, max_len, length, pasted)
+                        self.text_history_after(buf, length)
                         Memory.free(pasted as i64)
-                        if length != before or had_selection == 1:
-                            return 1
+                        return 1
+                    Memory.free(pasted as i64)
+                elif first == 26 as i8:
+                    # Ctrl+Z, and Ctrl+Shift+Z redoes.
+                    before_undo: i64 = self.hist_sum
+                    if self.input_state.shift_down == 1:
+                        self.text_redo(buf, max_len, length)
+                    else:
+                        self.text_undo(buf, max_len, length)
+                    if self.hist_sum != before_undo:
+                        return 1
+                elif first == 25 as i8:
+                    before_redo: i64 = self.hist_sum
+                    self.text_redo(buf, max_len, length)
+                    if self.hist_sum != before_redo:
+                        return 1
                 return 0
 
+        # Arrows move one character, or with Ctrl one word.
         if self.input_state.left_pressed == 1:
-            self.text_move_caret(self.text_prev_cluster(buf, length, self.text_caret), extend, length)
+            if words == 1:
+                self.text_move_caret(self.text_word_left(buf, length, self.text_caret), extend, length)
+            else:
+                self.text_move_caret(self.text_prev_cluster(buf, length, self.text_caret), extend, length)
+            self.text_history_break()
         if self.input_state.right_pressed == 1:
-            self.text_move_caret(self.text_next_cluster(buf, length, self.text_caret), extend, length)
+            if words == 1:
+                self.text_move_caret(self.text_word_right(buf, length, self.text_caret), extend, length)
+            else:
+                self.text_move_caret(self.text_next_cluster(buf, length, self.text_caret), extend, length)
+            self.text_history_break()
         if self.input_state.home_pressed == 1:
             self.text_move_caret(0, extend, length)
+            self.text_history_break()
         if self.input_state.end_pressed == 1:
             self.text_move_caret(length, extend, length)
+            self.text_history_break()
 
+        # Backspace and Delete remove the selection, or one character, or
+        # with Ctrl one word.
         if self.input_state.backspace == 1:
             if self.text_has_selection() == 1:
+                self.text_history_before(buf, length, SOORYN_EDIT_OTHER, 0)
                 length = self.text_delete_selection(buf, length)
+                self.text_history_after(buf, length)
                 changed = 1
             elif self.text_caret > 0:
                 from_index: i32 = self.text_backspace_from(buf, length, self.text_caret)
+                kind: i32 = SOORYN_EDIT_BACK
+                if words == 1:
+                    from_index = self.text_word_left(buf, length, self.text_caret)
+                    kind = SOORYN_EDIT_OTHER
+                self.text_history_before(buf, length, kind, 0)
                 length = self.text_delete_range(buf, length, from_index, self.text_caret)
                 self.text_caret = from_index
                 self.text_anchor = self.text_caret
+                self.text_history_after(buf, length)
                 changed = 1
 
         if self.input_state.delete_pressed == 1:
             if self.text_has_selection() == 1:
+                self.text_history_before(buf, length, SOORYN_EDIT_OTHER, 0)
                 length = self.text_delete_selection(buf, length)
+                self.text_history_after(buf, length)
                 changed = 1
             elif self.text_caret < length:
-                length = self.text_delete_range(buf, length, self.text_caret, self.text_next_cluster(buf, length, self.text_caret))
+                to_index: i32 = self.text_next_cluster(buf, length, self.text_caret)
+                kind_forward: i32 = SOORYN_EDIT_FORWARD
+                if words == 1:
+                    to_index = self.text_word_right(buf, length, self.text_caret)
+                    kind_forward = SOORYN_EDIT_OTHER
+                self.text_history_before(buf, length, kind_forward, 0)
+                length = self.text_delete_range(buf, length, self.text_caret, to_index)
+                self.text_history_after(buf, length)
                 changed = 1
 
-        if Memory.strlen(self.input_state.typed_chars) > 0:
+        # Typing. Control characters are never text, whatever delivered them.
+        typed: i64 = self.input_state.typed_chars as i64
+        if Memory.strlen(typed as str) > 0 and sooryn_has_control(typed) == 0:
+            kind_typed: i32 = SOORYN_EDIT_TYPE
+            if self.text_has_selection() == 1:
+                kind_typed = SOORYN_EDIT_OTHER
+            # A new word starts a new undo step: a space after something
+            # else, or anything after a space.
+            starts_word: i32 = 0
+            first_space: i32 = 0
+            if ((Memory.read_i8(typed) as i32) & 255) == 32:
+                first_space = 1
+            if self.text_caret > 0:
+                before_space: i32 = 0
+                if ((Memory.read_i8(buf + ((self.text_caret - 1) as i64)) as i32) & 255) == 32:
+                    before_space = 1
+                if first_space != before_space:
+                    starts_word = first_space
+            self.text_history_before(buf, length, kind_typed, starts_word)
             before: i32 = length
-            length = self.text_insert(buf, max_len, length, self.input_state.typed_chars)
-            if length != before:
+            had_selection: i32 = self.text_has_selection()
+            length = self.text_insert(buf, max_len, length, typed as str)
+            self.text_history_after(buf, length)
+            if length != before or had_selection == 1:
                 changed = 1
 
         return changed
@@ -374,4 +520,64 @@ fun sooryn_extends_cluster(cp: i32) -> i32:
         return 1
     if cp >= 917760 and cp <= 917999:
         return 1
+    return 0
+
+# ---------------------------------------------------------------
+# Character classes for word movement
+# ---------------------------------------------------------------
+SOORYN_CHAR_SPACE: i32 = 0
+SOORYN_CHAR_WORD: i32 = 1
+SOORYN_CHAR_PUNCT: i32 = 2
+
+fun sooryn_is_space(cp: i32) -> i32:
+    if cp == 32 or cp == 9 or cp == 160 or cp == 5760 or cp == 8239 or cp == 8287 or cp == 12288:
+        return 1
+    if cp >= 8192 and cp <= 8202:
+        return 1
+    return 0
+
+# Letters and digits of any script are word characters, with the marks on
+# them; spaces are spaces; the rest of ASCII and the punctuation blocks
+# (general punctuation, CJK punctuation, the Arabic comma, semicolon,
+# question mark and full stop) are punctuation.
+fun sooryn_char_class(cp: i32) -> i32:
+    if sooryn_is_space(cp) == 1:
+        return SOORYN_CHAR_SPACE
+    if cp < 128:
+        if cp >= 48 and cp <= 57:
+            return SOORYN_CHAR_WORD
+        if cp >= 65 and cp <= 90:
+            return SOORYN_CHAR_WORD
+        if cp >= 97 and cp <= 122:
+            return SOORYN_CHAR_WORD
+        if cp == 95:
+            return SOORYN_CHAR_WORD
+        return SOORYN_CHAR_PUNCT
+    if sooryn_is_mark(cp) == 1:
+        return SOORYN_CHAR_WORD
+    if cp >= 161 and cp <= 191:
+        return SOORYN_CHAR_PUNCT
+    if cp == 215 or cp == 247:
+        return SOORYN_CHAR_PUNCT
+    if cp >= 8192 and cp <= 8303:
+        return SOORYN_CHAR_PUNCT
+    if cp >= 12288 and cp <= 12351:
+        return SOORYN_CHAR_PUNCT
+    if cp == 1548 or cp == 1563 or cp == 1567 or cp == 1748:
+        return SOORYN_CHAR_PUNCT
+    if cp >= 1642 and cp <= 1645:
+        return SOORYN_CHAR_PUNCT
+    if cp >= 65281 and cp <= 65295:
+        return SOORYN_CHAR_PUNCT
+    return SOORYN_CHAR_WORD
+
+# 1 when the NUL-terminated bytes hold a control character.
+fun sooryn_has_control(bytes: i64) -> i32:
+    i: i64 = 0
+    b: i32 = (Memory.read_i8(bytes) as i32) & 255
+    while b != 0:
+        if b < 32 or b == 127:
+            return 1
+        i = i + 1
+        b = (Memory.read_i8(bytes + i) as i32) & 255
     return 0

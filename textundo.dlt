@@ -1,0 +1,199 @@
+# ============================
+#  Sooryn Text Undo
+# ============================
+# Ctrl+Z undoes and Ctrl+Y (or Ctrl+Shift+Z) redoes, as in a browser's text
+# field, many steps deep.
+#
+# Edits are grouped the way people think of them, not one keystroke at a
+# time: a run of typing is one step, broken where a new word starts, and so
+# is a run of Backspace or of Delete. Moving the caret, clicking, pasting,
+# cutting, deleting a word and typing over a selection each start a step of
+# their own.
+#
+# The history belongs to the field last edited. It survives focus leaving
+# and coming back, and is dropped when another field is edited or when the
+# application changes the text itself (an undo must never restore something
+# the program has since replaced).
+#
+# Each step is a copy of the field as it was, with its caret and selection.
+# Single-line fields are short, so copies are simpler and safer than diffs.
+
+SOORYN_UNDO_DEPTH: i32 = 100
+
+SOORYN_EDIT_NONE: i32 = 0
+SOORYN_EDIT_TYPE: i32 = 1
+SOORYN_EDIT_BACK: i32 = 2
+SOORYN_EDIT_FORWARD: i32 = 3
+SOORYN_EDIT_OTHER: i32 = 4
+
+attach SoorynApp:
+    # FNV-1a of the field's text: how a change the application made is
+    # noticed.
+    fun _text_sum(self, buf: i64, length: i32) -> i64:
+        h: i64 = 14695981039346656037 as i64
+        i: i32 = 0
+        while i < length:
+            h = (h ^ ((Memory.read_i8(buf + (i as i64)) as i64) & 255)) * (1099511628211 as i64)
+            i = i + 1
+        return (h ^ (length as i64)) * (1099511628211 as i64)
+
+    fun _hist_reserve(self) -> i32:
+        if self.hist_undo != 0:
+            return 1
+        span: i64 = (SOORYN_UNDO_DEPTH as i64) * 8
+        self.hist_undo = Memory.malloc_zeroed(span)
+        self.hist_redo = Memory.malloc_zeroed(span)
+        if self.hist_undo == 0 or self.hist_redo == 0:
+            self._free_text_history()
+            return 0
+        return 1
+
+    # A copy of the field: caret, anchor, length, then the bytes.
+    fun _hist_snapshot(self, buf: i64, length: i32) -> i64:
+        entry: i64 = Memory.malloc(16 + (length as i64) + 1)
+        if entry == 0:
+            return 0
+        Memory.write_i32(entry, self.text_caret)
+        Memory.write_i32(entry + 4, self.text_anchor)
+        Memory.write_i32(entry + 8, length)
+        Memory.copy(entry + 16, buf, length as i64)
+        Memory.write_i8(entry + 16 + (length as i64), 0 as i8)
+        return entry
+
+    fun _hist_drop(self, stack: i64, count: i32):
+        i: i32 = 0
+        while i < count:
+            entry: i64 = Memory.read_i64(stack + (i as i64) * 8)
+            if entry != 0:
+                Memory.free(entry)
+            Memory.write_i64(stack + (i as i64) * 8, 0)
+            i = i + 1
+
+    fun text_history_clear(self):
+        if self.hist_undo != 0:
+            self._hist_drop(self.hist_undo, self.hist_undo_count)
+            self._hist_drop(self.hist_redo, self.hist_redo_count)
+        self.hist_undo_count = 0
+        self.hist_redo_count = 0
+        self.hist_kind = SOORYN_EDIT_NONE
+
+    fun _hist_push(self, stack: i64, count: i32, entry: i64) -> i32:
+        if count >= SOORYN_UNDO_DEPTH:
+            # Full: the oldest step goes.
+            Memory.free(Memory.read_i64(stack))
+            i: i32 = 1
+            while i < count:
+                Memory.write_i64(stack + ((i - 1) as i64) * 8, Memory.read_i64(stack + (i as i64) * 8))
+                i = i + 1
+            count = count - 1
+        Memory.write_i64(stack + (count as i64) * 8, entry)
+        return count + 1
+
+    # Called once a frame for the focused field, before its keys: drop the
+    # history when the application changed the text under us. Visiting
+    # another field keeps it; editing another field (text_history_before)
+    # drops it.
+    fun text_history_sync(self, buf: i64, length: i32):
+        if self.hist_owner != self.text_owner:
+            return
+        if self._text_sum(buf, length) != self.hist_sum:
+            self.text_history_clear()
+            self.hist_sum = self._text_sum(buf, length)
+
+    # The caret moved by itself: the next edit starts a new step.
+    fun text_history_break(self):
+        self.hist_kind = SOORYN_EDIT_NONE
+
+    # Before an edit of `kind`. Records the field as it was unless the edit
+    # continues the step in progress.
+    fun text_history_before(self, buf: i64, length: i32, kind: i32, starts_word: i32):
+        if self._hist_reserve() == 0:
+            return
+        if self.hist_owner != self.text_owner:
+            # The first edit in another field: this history is the new one's.
+            self.text_history_clear()
+            self.hist_owner = self.text_owner
+        joins: i32 = 0
+        if kind != SOORYN_EDIT_OTHER and kind == self.hist_kind and self.text_caret == self.hist_caret and self.text_has_selection() == 0:
+            joins = 1
+            if kind == SOORYN_EDIT_TYPE and starts_word == 1:
+                joins = 0
+        self.hist_kind = kind
+        if joins == 1:
+            return
+        entry: i64 = self._hist_snapshot(buf, length)
+        if entry == 0:
+            return
+        self.hist_undo_count = self._hist_push(self.hist_undo, self.hist_undo_count, entry)
+        self._hist_drop(self.hist_redo, self.hist_redo_count)
+        self.hist_redo_count = 0
+
+    # After an edit: where it left the caret and what the text now is.
+    fun text_history_after(self, buf: i64, length: i32):
+        self.hist_caret = self.text_caret
+        self.hist_sum = self._text_sum(buf, length)
+
+    # Put a recorded step back. Returns the new length.
+    fun _hist_restore(self, entry: i64, buf: i64, max_len: i32) -> i32:
+        length: i32 = Memory.read_i32(entry + 8)
+        if length > max_len:
+            length = max_len
+        Memory.copy(buf, entry + 16, length as i64)
+        Memory.write_i8(buf + (length as i64), 0 as i8)
+        self.text_caret = Memory.read_i32(entry)
+        self.text_anchor = Memory.read_i32(entry + 4)
+        if self.text_caret > length:
+            self.text_caret = length
+        if self.text_anchor > length:
+            self.text_anchor = length
+        Memory.free(entry)
+        self.hist_kind = SOORYN_EDIT_NONE
+        self.text_history_after(buf, length)
+        return length
+
+    # Ctrl+Z. Returns the new length (unchanged when there is nothing).
+    fun text_undo(self, buf: i64, max_len: i32, length: i32) -> i32:
+        if self.hist_owner != self.text_owner or self.hist_undo_count <= 0:
+            return length
+        current: i64 = self._hist_snapshot(buf, length)
+        if current == 0:
+            return length
+        self.hist_redo_count = self._hist_push(self.hist_redo, self.hist_redo_count, current)
+        self.hist_undo_count = self.hist_undo_count - 1
+        at: i64 = self.hist_undo + (self.hist_undo_count as i64) * 8
+        entry: i64 = Memory.read_i64(at)
+        Memory.write_i64(at, 0)
+        return self._hist_restore(entry, buf, max_len)
+
+    # Ctrl+Y or Ctrl+Shift+Z.
+    fun text_redo(self, buf: i64, max_len: i32, length: i32) -> i32:
+        if self.hist_owner != self.text_owner or self.hist_redo_count <= 0:
+            return length
+        current: i64 = self._hist_snapshot(buf, length)
+        if current == 0:
+            return length
+        self.hist_undo_count = self._hist_push(self.hist_undo, self.hist_undo_count, current)
+        self.hist_redo_count = self.hist_redo_count - 1
+        at: i64 = self.hist_redo + (self.hist_redo_count as i64) * 8
+        entry: i64 = Memory.read_i64(at)
+        Memory.write_i64(at, 0)
+        return self._hist_restore(entry, buf, max_len)
+
+    fun text_can_undo(self) -> i32:
+        if self.hist_undo_count > 0:
+            return 1
+        return 0
+
+    fun text_can_redo(self) -> i32:
+        if self.hist_redo_count > 0:
+            return 1
+        return 0
+
+    fun _free_text_history(self):
+        self.text_history_clear()
+        if self.hist_undo != 0:
+            Memory.free(self.hist_undo)
+        if self.hist_redo != 0:
+            Memory.free(self.hist_redo)
+        self.hist_undo = 0
+        self.hist_redo = 0

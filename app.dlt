@@ -175,6 +175,29 @@ struct SoorynApp:
     text_caret: i32 = 0
     text_anchor: i32 = 0
     text_dragging: i32 = 0
+    # Ctrl+Right lands at the start of the next word on Windows and at the
+    # end of this one elsewhere, as each platform's own fields do.
+    text_word_ends: i32 = 0
+    # Clicks in quick succession on one spot: 2 selects a word, 3 the field.
+    click_count: i32 = 0
+    click_last_us: i64 = 0
+    click_last_x: i32 = 0
+    click_last_y: i32 = 0
+    click_last_id: i64 = 0
+
+    # ---- Undo (see textundo.dlt) ----
+    hist_undo: i64 = 0
+    hist_redo: i64 = 0
+    hist_undo_count: i32 = 0
+    hist_redo_count: i32 = 0
+    hist_owner: i64 = 0
+    hist_kind: i32 = 0
+    hist_caret: i32 = 0
+    hist_sum: i64 = 0
+
+    # ---- Key repeat (see keys.dlt) ----
+    key_next_us: i64 = 0
+    key_wake: i32 = 0
 
     # ---- Logical-to-visual mapping (see textmap.dlt) ----
     tm_source: i64 = 0
@@ -356,6 +379,8 @@ attach SoorynApp:
         app.sync_logical_size()
         # Then the face: the platform's interface font at that size.
         app.default_font_kind = SOORYN_FONT_SYSTEM
+        if window_backend() != WINDOW_BACKEND_WIN32:
+            app.text_word_ends = 1
         app.apply_default_font()
         return app
 
@@ -419,6 +444,8 @@ attach SoorynApp:
         self._free_system_font()
         self._free_clipboard()
         self._free_hit_clips()
+        self._free_text_history()
+        self._free_keys()
         if self.commands.is_valid() == 1:
             self.commands.destroy()
         if self.overlay.is_valid() == 1:
@@ -577,8 +604,10 @@ attach SoorynApp:
             chars,
             window_consume_backspace()
         )
+        now: i64 = TimeOps.time_now_ns() / 1000
+        self.key_wake = 0
         self.input_state.set_navigation(
-            key_just_pressed(KEY_DELETE),
+            self.key_repeat(SOORYN_KEY_DELETE, key_pressed(KEY_DELETE), key_just_pressed(KEY_DELETE), now),
             key_just_pressed(KEY_ENTER),
             key_just_pressed(KEY_TAB),
             key_just_pressed(KEY_ESCAPE),
@@ -587,10 +616,10 @@ attach SoorynApp:
             alt_pressed()
         )
         self.input_state.set_arrows(
-            key_just_pressed(KEY_LEFT),
-            key_just_pressed(KEY_RIGHT),
-            key_just_pressed(KEY_UP),
-            key_just_pressed(KEY_DOWN)
+            self.key_repeat(SOORYN_KEY_LEFT, key_pressed(KEY_LEFT), key_just_pressed(KEY_LEFT), now),
+            self.key_repeat(SOORYN_KEY_RIGHT, key_pressed(KEY_RIGHT), key_just_pressed(KEY_RIGHT), now),
+            self.key_repeat(SOORYN_KEY_UP, key_pressed(KEY_UP), key_just_pressed(KEY_UP), now),
+            self.key_repeat(SOORYN_KEY_DOWN, key_pressed(KEY_DOWN), key_just_pressed(KEY_DOWN), now)
         )
         self.input_state.set_edit_keys(
             key_just_pressed(KEY_HOME),
@@ -605,7 +634,8 @@ attach SoorynApp:
         self.hit_clip_top = 0
         self.roll_layers()
         self.cursor_wanted = SOORYN_CURSOR_ARROW
-        self.anim_active = 0
+        # A held key that repeats needs the frames an animation would.
+        self.anim_active = self.key_wake
         self.begin_timing()
         self.begin_focus_frame()
         # Stale drag cleanup — if a drag ended and no drop_target claimed
@@ -647,6 +677,27 @@ attach SoorynApp:
         if h == 0:
             return 1
         return h
+
+    # How many presses in a row this one is: within the double-click time
+    # (500 ms, the Windows default) and a few pixels of the last, on the same
+    # widget. 1, 2, 3, then back to 1.
+    fun count_click(self, id: i64, x: i32, y: i32) -> i32:
+        now: i64 = self.frame_time_us
+        dx: i32 = x - self.click_last_x
+        dy: i32 = y - self.click_last_y
+        if dx < 0:
+            dx = 0 - dx
+        if dy < 0:
+            dy = 0 - dy
+        if id == self.click_last_id and now - self.click_last_us <= 500000 and dx <= 4 and dy <= 4 and self.click_count < 3:
+            self.click_count = self.click_count + 1
+        else:
+            self.click_count = 1
+        self.click_last_id = id
+        self.click_last_us = now
+        self.click_last_x = x
+        self.click_last_y = y
+        return self.click_count
 
     fun set_hover(self, id: i64):
         self.want_control_cursor()

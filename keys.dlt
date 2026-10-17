@@ -1,0 +1,56 @@
+# ============================
+#  Sooryn Key Repeat
+# ============================
+# Holding an arrow key, Delete or Backspace keeps it going, as everywhere
+# else on the desktop: once, then again after a pause, then steadily. The
+# input package reports a key's edge, not the system's repeats, so Sooryn
+# repeats the keys that edit and move a caret itself, at the Windows
+# defaults (a 500 ms pause, then about 30 a second).
+#
+# Keys are read before the frame begins, so a held key asks for the next
+# frame through key_wake, which begin_frame turns into animation.
+#
+# Backspace needs nothing here: it arrives as a typed character, which the
+# system already repeats.
+
+SOORYN_KEY_LEFT: i32 = 0
+SOORYN_KEY_RIGHT: i32 = 1
+SOORYN_KEY_UP: i32 = 2
+SOORYN_KEY_DOWN: i32 = 3
+SOORYN_KEY_DELETE: i32 = 4
+SOORYN_KEY_SLOTS: i32 = 5
+SOORYN_REPEAT_DELAY_US: i64 = 500000
+SOORYN_REPEAT_EVERY_US: i64 = 33333
+
+attach SoorynApp:
+    # 1 when the key in `slot` should act this frame: on its press, and on
+    # each repeat while it is held. `now` is in microseconds.
+    fun key_repeat(self, slot: i32, held: i32, pressed: i32, now: i64) -> i32:
+        if self.key_next_us == 0:
+            self.key_next_us = Memory.malloc_zeroed((SOORYN_KEY_SLOTS as i64) * 8)
+            if self.key_next_us == 0:
+                return pressed
+        at: i64 = self.key_next_us + (slot as i64) * 8
+        if pressed == 1:
+            Memory.write_i64(at, now + SOORYN_REPEAT_DELAY_US)
+            return 1
+        if held == 0:
+            Memory.write_i64(at, 0)
+            return 0
+        due: i64 = Memory.read_i64(at)
+        if due == 0 or now < due:
+            # Held, but not yet due. Keep frames coming so it is on time.
+            self.key_wake = 1
+            return 0
+        # Due. Catch up without firing a burst after a stalled frame.
+        due = due + SOORYN_REPEAT_EVERY_US
+        if due <= now:
+            due = now + SOORYN_REPEAT_EVERY_US
+        Memory.write_i64(at, due)
+        self.key_wake = 1
+        return 1
+
+    fun _free_keys(self):
+        if self.key_next_us != 0:
+            Memory.free(self.key_next_us)
+        self.key_next_us = 0

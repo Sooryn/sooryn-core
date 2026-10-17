@@ -457,10 +457,23 @@ attach SoorynApp:
 
             # The pointer places the caret and drags out a selection, both in
             # visual space and converted back to the position in the buffer.
+            # Shift+click extends the selection; a double click selects a
+            # word and a triple click the whole field, as in a browser.
             if hovered == 1 and mouse.left_pressed() == 1:
-                self.text_caret = self.text_codepoints_to_bytes(buf, max_len, self.text_map_index_at(mouse.x - text_x))
-                self.text_anchor = self.text_caret
-                self.text_dragging = 1
+                at: i32 = self.text_codepoints_to_bytes(buf, max_len, self.text_map_index_at(mouse.x - text_x))
+                clicks: i32 = self.count_click(id, mouse.x, mouse.y)
+                self.text_history_break()
+                if clicks == 2:
+                    self.text_select_word_at(buf, length, at)
+                elif clicks >= 3:
+                    self.text_select_all(length)
+                elif self.input_state.shift_down == 1:
+                    self.text_caret = at
+                    self.text_dragging = 1
+                else:
+                    self.text_caret = at
+                    self.text_anchor = at
+                    self.text_dragging = 1
             if self.text_dragging == 1:
                 if mouse.left_down == 1:
                     self.text_caret = self.text_codepoints_to_bytes(buf, max_len, self.text_map_index_at(mouse.x - text_x))

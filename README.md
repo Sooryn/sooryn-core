@@ -749,12 +749,26 @@ maximum length.
 
 - **Left/Right** move the caret one character, **Home/End** jump to either
   end, and **Shift** with any of them extends the selection.
+- **Ctrl+Left/Right** move by word, in any script, stopping at punctuation.
+  Ctrl+Right lands at the start of the next word on Windows and at the end
+  of the word elsewhere, as each platform's own fields do.
 - **Backspace** and **Delete** remove the selection when there is one, and
-  otherwise the character before or after the caret.
+  otherwise the character before or after the caret; with **Ctrl**, the
+  word.
+- **Ctrl+Z** undoes and **Ctrl+Y** or **Ctrl+Shift+Z** redoes, 100 steps
+  deep. Steps are what people mean by one: a word of typing, a run of
+  Backspace, a paste, a cut. Moving the caret ends a step. The history
+  survives a visit to another field, and is dropped when another field is
+  edited or the application replaces the text.
 - **Ctrl+C, Ctrl+X, Ctrl+V** copy, cut and paste (see Clipboard).
-- Typing inserts at the caret, replacing the selection.
+- Typing inserts at the caret, replacing the selection. Control characters
+  are never typed in, whatever delivered them.
 - **Ctrl+A** selects everything.
 - Clicking places the caret at the pointer, and dragging extends a selection.
+  **Shift+click** extends it, a **double click** selects a word and a
+  **triple click** the whole field.
+- Held arrows and Delete **repeat** as on the desktop: once, a 500 ms pause,
+  then about 30 a second.
 - The selection is drawn behind the text, and the caret sits at its measured
   pixel position rather than at a fixed advance, so it stays correct under a
   proportional face.
@@ -769,7 +783,8 @@ never rests inside one:
   goes whole.
 
 Positions are byte offsets into the UTF-8 buffer, so callers still hand over
-a byte buffer and a maximum length. `tests/clusters.dlt` covers each case.
+a byte buffer and a maximum length. `tests/clusters.dlt` covers characters
+and `tests/editing.dlt` undo, words, clicks and key repeat.
 
 ## Scrolling
 

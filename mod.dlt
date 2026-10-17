@@ -24,6 +24,8 @@ load sooryn/frames
 load sooryn/colors
 load sooryn/focus
 load sooryn/textedit
+load sooryn/textundo
+load sooryn/keys
 load sooryn/clipboard
 load sooryn/cursor
 load sooryn/hit

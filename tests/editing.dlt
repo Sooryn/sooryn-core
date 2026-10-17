@@ -1,0 +1,324 @@
+import sooryn
+
+# Editing as in a browser's text field: Ctrl+Z / Ctrl+Y with steps grouped
+# the way people think of them, Ctrl+arrows and Ctrl+Backspace/Delete by
+# word in any script, double and triple click, Shift+click, held keys that
+# repeat, and control characters that are never text.
+
+FIELD_X: i32 = 20
+FIELD_W: i32 = 360
+FIELD_H: i32 = 28
+A_Y: i32 = 20
+B_Y: i32 = 70
+
+g_a: i64 = 0
+g_b: i64 = 0
+
+fun same(buf: i64, expected: str) -> i32:
+    if Str.equals(buf as str, expected) == true:
+        return 1
+    return 0
+
+fun frame(app: SoorynApp):
+    if app.begin_offscreen() == 1:
+        app.text_input(FIELD_X, A_Y, FIELD_W, FIELD_H, g_a, 63)
+        app.text_input(FIELD_X, B_Y, FIELD_W, FIELD_H, g_b, 63)
+        app.end()
+
+# A pause long enough that the next click is not a double click.
+fun pause(app: SoorynApp):
+    app.inject_delta_us(700000)
+    frame(app)
+    app.inject_delta_us(16666)
+
+fun click_at(app: SoorynApp, x: i32, y: i32):
+    app.inject_mouse_move(x, y)
+    app.inject_left_down()
+    frame(app)
+    app.inject_left_up()
+    frame(app)
+
+fun focus(app: SoorynApp, y: i32):
+    pause(app)
+    click_at(app, FIELD_X + FIELD_W - 4, y + 14)
+
+fun type_text(app: SoorynApp, text: str):
+    app.inject_text(text)
+    frame(app)
+
+fun ctrl_char(app: SoorynApp, code: i32, shift: i32):
+    key: i64 = Memory.malloc_zeroed(2)
+    Memory.write_i8(key, code as i8)
+    app.inject_modifiers(shift, 1, 0)
+    app.inject_text(key as str)
+    frame(app)
+    app.inject_modifiers(0, 0, 0)
+    Memory.free(key)
+
+fun undo(app: SoorynApp):
+    ctrl_char(app, 26, 0)
+
+fun redo(app: SoorynApp):
+    ctrl_char(app, 25, 0)
+
+fun set_text(buf: i64, text: str):
+    n: i64 = Memory.strlen(text)
+    Memory.copy(buf, text as i64, n)
+    Memory.write_i8(buf + n, 0 as i8)
+
+fun ctrl_left(app: SoorynApp):
+    app.inject_modifiers(0, 1, 0)
+    app.inject_arrow_left()
+    frame(app)
+    app.inject_modifiers(0, 0, 0)
+
+fun ctrl_right(app: SoorynApp):
+    app.inject_modifiers(0, 1, 0)
+    app.inject_arrow_right()
+    frame(app)
+    app.inject_modifiers(0, 0, 0)
+
+fun main() -> i32:
+    app: SoorynApp = SoorynApp.headless(400, 120)
+    g_a = app.alloc_buf(64)
+    g_b = app.alloc_buf(64)
+    frame(app)
+    focus(app, A_Y)
+
+    # ---- Typing is grouped by word: one undo takes back a word, not a key.
+    type_text(app, "h")
+    type_text(app, "e")
+    type_text(app, "l")
+    type_text(app, "l")
+    type_text(app, "o")
+    type_text(app, " ")
+    type_text(app, "w")
+    type_text(app, "o")
+    undo(app)
+    if same(g_a, "hello") == 0:
+        print(@"sooryn editing: undo left '{g_a as str}' instead of taking back the last word")
+        return 1
+    undo(app)
+    if same(g_a, "") == 0:
+        print("sooryn editing: a second undo did not take back the first word")
+        return 2
+    undo(app)
+    if same(g_a, "") == 0:
+        print("sooryn editing: undo with nothing left changed the field")
+        return 3
+    redo(app)
+    redo(app)
+    if same(g_a, "hello wo") == 0:
+        print("sooryn editing: Ctrl+Y did not redo both steps")
+        return 4
+    undo(app)
+    ctrl_char(app, 26, 1)
+    if same(g_a, "hello wo") == 0:
+        print("sooryn editing: Ctrl+Shift+Z did not redo")
+        return 5
+
+    # ---- A run of Backspace is one step; moving the caret starts another.
+    app.inject_backspace()
+    frame(app)
+    app.inject_backspace()
+    frame(app)
+    if same(g_a, "hello ") == 0:
+        print("sooryn editing: Backspace did not delete")
+        return 6
+    undo(app)
+    if same(g_a, "hello wo") == 0:
+        print("sooryn editing: a run of Backspace did not undo as one step")
+        return 7
+    type_text(app, "rld")
+    app.inject_arrow_left()
+    frame(app)
+    type_text(app, "X")
+    if same(g_a, "hello worlXd") == 0:
+        print("sooryn editing: typing after an arrow did not land at the caret")
+        return 8
+    # Away and back to the same place still ends the step.
+    app.inject_arrow_left()
+    frame(app)
+    app.inject_arrow_right()
+    frame(app)
+    type_text(app, "Y")
+    undo(app)
+    if same(g_a, "hello worlXd") == 0:
+        print(@"sooryn editing: typing after the caret went away and back joined the earlier step ({g_a as str})")
+        return 34
+    undo(app)
+    if same(g_a, "hello world") == 0:
+        print(@"sooryn editing: typing after moving the caret joined the earlier step ({g_a as str})")
+        return 9
+
+    # ---- A new edit after an undo drops the redo.
+    undo(app)
+    type_text(app, "Z")
+    redo(app)
+    if same(g_a, "hello woZ") == 0:
+        print(@"sooryn editing: redo after a new edit brought back '{g_a as str}'")
+        return 10
+
+    # ---- Text the application replaced is never undone back.
+    set_text(g_a, "replaced")
+    frame(app)
+    undo(app)
+    if same(g_a, "replaced") == 0:
+        print("sooryn editing: undo restored text the application had replaced")
+        return 11
+
+    # ---- History survives a visit to another field without edits there, and
+    # is dropped when the other field is edited.
+    app.inject_end()
+    frame(app)
+    type_text(app, "!")
+    focus(app, B_Y)
+    focus(app, A_Y)
+    undo(app)
+    if same(g_a, "replaced") == 0:
+        print("sooryn editing: history was lost by focusing another field")
+        return 12
+    redo(app)
+    focus(app, B_Y)
+    type_text(app, "b")
+    focus(app, A_Y)
+    undo(app)
+    if same(g_a, "replaced!") == 0:
+        print("sooryn editing: another field's edit was undone in this one")
+        return 13
+
+    # ---- Words: Ctrl+Left stops at each word and at punctuation.
+    set_text(g_a, "hello, world  foo")
+    frame(app)
+    app.inject_end()
+    frame(app)
+    ctrl_left(app)
+    if app.text_caret != 14:
+        print(@"sooryn editing: Ctrl+Left from the end went to {app.text_caret}, not the last word")
+        return 14
+    ctrl_left(app)
+    ctrl_left(app)
+    if app.text_caret != 5:
+        print(@"sooryn editing: Ctrl+Left did not stop at the comma (at {app.text_caret})")
+        return 15
+    ctrl_left(app)
+    if app.text_caret != 0:
+        print("sooryn editing: Ctrl+Left did not reach the start")
+        return 16
+
+    # Windows: Ctrl+Right lands at the start of the next word.
+    ctrl_right(app)
+    ctrl_right(app)
+    if app.text_caret != 7:
+        print(@"sooryn editing: Ctrl+Right went to {app.text_caret}, not the start of the next word")
+        return 17
+    # Elsewhere: at the end of the word.
+    app.text_word_ends = 1
+    ctrl_right(app)
+    if app.text_caret != 12:
+        print(@"sooryn editing: Ctrl+Right (word ends) went to {app.text_caret}, not the end of the word")
+        return 18
+    app.text_word_ends = 0
+
+    # Arabic words are words: 5 letters of 2 bytes, then a space.
+    set_text(g_a, "مرحبا بالعالم")
+    frame(app)
+    app.inject_home()
+    frame(app)
+    ctrl_right(app)
+    if app.text_caret != 11:
+        print(@"sooryn editing: Ctrl+Right in Arabic went to {app.text_caret}, not the next word")
+        return 19
+
+    # ---- Ctrl+Backspace and Ctrl+Delete take a word, as one undo step.
+    set_text(g_a, "hello world")
+    frame(app)
+    app.inject_end()
+    frame(app)
+    app.inject_modifiers(0, 1, 0)
+    app.inject_backspace()
+    frame(app)
+    app.inject_modifiers(0, 0, 0)
+    if same(g_a, "hello ") == 0:
+        print(@"sooryn editing: Ctrl+Backspace left '{g_a as str}'")
+        return 20
+    undo(app)
+    if same(g_a, "hello world") == 0:
+        print("sooryn editing: Ctrl+Backspace did not undo")
+        return 21
+    app.inject_home()
+    frame(app)
+    app.inject_modifiers(0, 1, 0)
+    app.inject_delete()
+    frame(app)
+    app.inject_modifiers(0, 0, 0)
+    if same(g_a, "world") == 0:
+        print(@"sooryn editing: Ctrl+Delete left '{g_a as str}'")
+        return 22
+
+    # ---- Double click selects a word, triple click the field; slow clicks
+    # do neither; Shift+click extends.
+    set_text(g_a, "hello world")
+    frame(app)
+    pause(app)
+    word_x: i32 = FIELD_X + 8 + app.text_width("hello wo")
+    click_at(app, word_x, A_Y + 14)
+    click_at(app, word_x, A_Y + 14)
+    if app.text_sel_start() != 6 or app.text_sel_end() != 11:
+        print(@"sooryn editing: a double click selected {app.text_sel_start()}..{app.text_sel_end()}, not the word")
+        return 23
+    click_at(app, word_x, A_Y + 14)
+    if app.text_sel_start() != 0 or app.text_sel_end() != 11:
+        print("sooryn editing: a triple click did not select the field")
+        return 24
+    pause(app)
+    click_at(app, word_x, A_Y + 14)
+    pause(app)
+    click_at(app, word_x, A_Y + 14)
+    if app.text_has_selection() == 1:
+        print("sooryn editing: two slow clicks counted as a double click")
+        return 25
+    pause(app)
+    app.inject_modifiers(1, 0, 0)
+    click_at(app, FIELD_X + 9, A_Y + 14)
+    app.inject_modifiers(0, 0, 0)
+    if app.text_sel_start() != 0 or app.text_sel_end() != 8:
+        print(@"sooryn editing: Shift+click selected {app.text_sel_start()}..{app.text_sel_end()}")
+        return 26
+
+    # ---- Control characters are never text.
+    app.inject_end()
+    frame(app)
+    tab_text: i64 = Memory.malloc_zeroed(4)
+    Memory.write_i8(tab_text, 97 as i8)
+    Memory.write_i8(tab_text + 1, 9 as i8)
+    Memory.write_i8(tab_text + 2, 98 as i8)
+    type_text(app, tab_text as str)
+    if same(g_a, "hello world") == 0:
+        print("sooryn editing: a control character was typed into the field")
+        return 27
+
+    # ---- A held key repeats: once, a pause, then steadily; a stalled frame
+    # does not fire a burst.
+    if app.key_repeat(0, 1, 1, 0) != 1:
+        print("sooryn editing: a key press did not act")
+        return 28
+    if app.key_repeat(0, 1, 0, 100000) != 0 or app.key_repeat(0, 1, 0, 499000) != 0:
+        print("sooryn editing: a held key repeated before the pause")
+        return 29
+    if app.key_repeat(0, 1, 0, 500000) != 1:
+        print("sooryn editing: a held key did not repeat after the pause")
+        return 30
+    if app.key_repeat(0, 1, 0, 520000) != 0 or app.key_repeat(0, 1, 0, 534000) != 1:
+        print("sooryn editing: a held key did not repeat steadily")
+        return 31
+    if app.key_repeat(0, 1, 0, 3000000) != 1 or app.key_repeat(0, 1, 0, 3001000) != 0:
+        print("sooryn editing: a stalled frame fired a burst of repeats")
+        return 32
+    if app.key_repeat(0, 0, 0, 3100000) != 0 or app.key_repeat(0, 1, 0, 3700000) != 0:
+        print("sooryn editing: a released key kept repeating")
+        return 33
+
+    app.destroy()
+    print("sooryn editing: ok")
+    return 0

@@ -169,7 +169,11 @@ fun main() -> i32:
         app.destroy()
         return 18
 
-    # Click near the start of the text.
+    # Click near the start of the text, long enough after the click that
+    # focused the field not to count as a double click.
+    app.inject_delta_us(600000)
+    frame(app, buf)
+    app.inject_delta_us(16666)
     text_x: i32 = FIELD_X + 8
     app.inject_mouse_move(text_x + 1, FIELD_Y + 14)
     app.inject_left_down()
