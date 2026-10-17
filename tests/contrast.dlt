@@ -1,0 +1,86 @@
+import sooryn
+
+# Both built-in themes meet WCAG 2.1 contrast: 4.5:1 for text (a button's
+# label on the accent included) and 3:1 for what marks a control (its
+# outline, its accent fill, the focus ring). The unset on_accent picks white
+# or near-black, whichever reads on the accent it is given.
+
+fun channel(v: i32) -> f64:
+    c: f64 = (v as f64) / 255.0
+    if c <= 0.03928:
+        return c / 12.92
+    return pow((c + 0.055) / 1.055, 2.4)
+
+fun luminance(color: i32) -> f64:
+    return 0.2126 * channel((color >> 16) & 255) + 0.7152 * channel((color >> 8) & 255) + 0.0722 * channel(color & 255)
+
+# The contrast ratio, times 100.
+fun ratio(a: i32, b: i32) -> i32:
+    la: f64 = luminance(a)
+    lb: f64 = luminance(b)
+    if lb > la:
+        t: f64 = la
+        la = lb
+        lb = t
+    return (((la + 0.05) / (lb + 0.05)) * 100.0) as i32
+
+g_failed: i32 = 0
+
+fun need(name: str, what: str, a: i32, b: i32, minimum: i32):
+    got: i32 = ratio(a, b)
+    if got < minimum:
+        print(@"sooryn contrast: {name}: {what} is {got / 100}.{(got % 100) / 10}{got % 10}:1, needs {minimum / 100}.{(minimum % 100) / 10}{minimum % 10}:1")
+        g_failed = g_failed + 1
+
+fun check(app: SoorynApp, name: str):
+    t: SoorynTheme = app.theme
+    need(name, "text on background", t.text, t.background, 450)
+    need(name, "text on surface", t.text, t.surface, 450)
+    need(name, "text on hovered surface", t.text, t.surface_hover, 450)
+    need(name, "text on selected surface", t.text, t.surface_active, 450)
+    need(name, "muted text on surface", t.muted_text, t.surface, 450)
+    need(name, "muted text on background", t.muted_text, t.background, 450)
+    need(name, "label on the accent", app.on_accent_color(), t.accent, 450)
+    need(name, "label on the hovered accent", app.on_accent_color(), t.accent_hover, 450)
+    need(name, "control outline on surface", app.control_border_color(), t.surface, 300)
+    need(name, "control outline on background", app.control_border_color(), t.background, 300)
+    need(name, "accent on surface", t.accent, t.surface, 300)
+    need(name, "focus ring on surface", t.focus_ring_color, t.surface, 300)
+    need(name, "focus ring on background", t.focus_ring_color, t.background, 300)
+    need(name, "danger on surface", t.danger, t.surface, 450)
+    if ratio(app.track_color(), t.surface) < 125:
+        print(@"sooryn contrast: {name}: the empty track does not stand out from the surface")
+        g_failed = g_failed + 1
+
+fun main() -> i32:
+    app: SoorynApp = SoorynApp.headless(64, 64)
+    check(app, "dark")
+    app.use_light_theme()
+    check(app, "light")
+    if g_failed > 0:
+        return 1
+
+    # Unset on_accent: near-black on a light accent, white on a dark one.
+    app.theme.on_accent = 0
+    app.theme.accent = ui_rgb(250, 200, 80)
+    if ratio(app.on_accent_color(), app.theme.accent) < 450:
+        print("sooryn contrast: the default label colour does not read on a light accent")
+        return 2
+    app.theme.accent = ui_rgb(40, 60, 160)
+    if ratio(app.on_accent_color(), app.theme.accent) < 450:
+        print("sooryn contrast: the default label colour does not read on a dark accent")
+        return 3
+
+    # Unset control_border and track fall back to something drawn.
+    app.theme.control_border = 0
+    app.theme.track = 0
+    if app.control_border_color() != app.theme.border:
+        print("sooryn contrast: an unset control outline did not fall back to the border")
+        return 4
+    if app.track_color() == app.theme.surface:
+        print("sooryn contrast: an unset track is the surface, so it cannot be seen")
+        return 5
+
+    app.destroy()
+    print("sooryn contrast: ok")
+    return 0

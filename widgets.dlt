@@ -107,7 +107,7 @@ attach SoorynApp:
         else:
             commands.push_fill_rect(x, y, width, height, fill)
         label_w: i32 = self.text_width(label)
-        commands.push_text(x + (width - label_w) / 2, y + (height - self.text_height()) / 2, label, self.theme.text)
+        commands.push_text(x + (width - label_w) / 2, y + (height - self.text_height()) / 2, label, self.on_accent_color())
         self.push_commands(commands)
         if focused == 1:
             self.focus_ring_rounded(x, y, width, height, r)
@@ -134,10 +134,10 @@ attach SoorynApp:
         r: i32 = self.theme.corner_radius
         if r > 0:
             commands.push_fill_rounded_rect(x, y, width, height, r, fill)
-            commands.push_outline_rounded_rect(x, y, width, height, r, self.theme.border, self.theme.border_width)
+            commands.push_outline_rounded_rect(x, y, width, height, r, self.control_border_color(), self.theme.border_width)
         else:
             commands.push_fill_rect(x, y, width, height, fill)
-            commands.push_outline_rect(x, y, width, height, self.theme.border, self.theme.border_width)
+            commands.push_outline_rect(x, y, width, height, self.control_border_color(), self.theme.border_width)
         label_w: i32 = self.text_width(label)
         commands.push_text(x + (width - label_w) / 2, y + (height - self.text_height()) / 2, label, self.theme.text)
         self.push_commands(commands)
@@ -186,7 +186,7 @@ attach SoorynApp:
         hover_t: i32 = self.anim_hover(self.mix_id(id, 7), hovered)
         on_fill: UIColor = self.mix_colors(self.theme.accent, self.theme.accent_hover, hover_t)
         fill: UIColor = self.mix_colors(self.theme.surface, on_fill, checked_t)
-        off_border: UIColor = self.mix_colors(self.theme.border, self.theme.text, hover_t)
+        off_border: UIColor = self.mix_colors(self.control_border_color(), self.theme.text, hover_t)
         border: UIColor = self.mix_colors(off_border, on_fill, checked_t)
         commands.push_fill_rect(box_x, y, box, box, fill)
         commands.push_outline_rect(box_x, y, box, box, border, self.theme.border_width)
@@ -194,8 +194,8 @@ attach SoorynApp:
         # Checkmark appears once the box is more filled than not, so it lands
         # with the colour rather than snapping ahead of it.
         if checked_t > 50:
-            commands.push_line(box_x + 3, y + 8, box_x + 7, y + 12, self.theme.text, 2)
-            commands.push_line(box_x + 7, y + 12, box_x + 13, y + 4, self.theme.text, 2)
+            commands.push_line(box_x + 3, y + 8, box_x + 7, y + 12, self.on_accent_color(), 2)
+            commands.push_line(box_x + 7, y + 12, box_x + 13, y + 4, self.on_accent_color(), 2)
 
         commands.push_text(label_x, y + (box - self.text_height()) / 2, label, self.theme.text)
         self.push_commands(commands)
@@ -237,7 +237,7 @@ attach SoorynApp:
 
         slide: i32 = self.anim(id, current * 100, 1000)
         toggle_hover: i32 = self.anim_hover(self.mix_id(id, 7), hovered)
-        off_track: UIColor = self.mix_colors(self.theme.surface, self.theme.surface_hover, toggle_hover)
+        off_track: UIColor = self.mix_colors(self.track_color(), self.control_border_color(), toggle_hover / 3)
         on_track: UIColor = self.mix_colors(self.theme.accent, self.theme.accent_hover, toggle_hover)
         track_color: UIColor = self.mix_colors(off_track, on_track, slide)
 
@@ -253,7 +253,7 @@ attach SoorynApp:
             from_cx = track_x + w - h / 2
             to_cx = track_x + h / 2
         cx: i32 = from_cx + ((to_cx - from_cx) * slide) / 100
-        commands.push_fill_circle(cx, cy, knob_r, self.theme.text)
+        commands.push_fill_circle(cx, cy, knob_r, self.mix_colors(self.theme.text, self.on_accent_color(), slide))
         commands.push_text(toggle_label_x, y + (h - self.text_height()) / 2, label, self.theme.text)
         self.push_commands(commands)
         if focused == 1:
@@ -339,7 +339,7 @@ attach SoorynApp:
         track_h: i32 = 6
         track_y: i32 = y + (h - track_h) / 2
         # Track background
-        commands.push_fill_rounded_rect(x, track_y, width, track_h, track_h / 2, self.theme.surface)
+        commands.push_fill_rounded_rect(x, track_y, width, track_h, track_h / 2, self.track_color())
         # The filled portion grows from the end the reader starts at.
         fill_w: i32 = 0
         if max_v > min_v:
@@ -371,12 +371,22 @@ attach SoorynApp:
             p = 0
         if p > 100:
             p = 100
+        # A rounded track with the done part filled from the end the reader
+        # starts at, as a slider is.
         commands: UIDrawList = self.commands
-        commands.push_fill_rect(x, y, width, height, self.theme.surface)
+        r: i32 = height / 2
+        if r > self.theme.corner_radius:
+            r = self.theme.corner_radius
+        commands.push_fill_rounded_rect(x, y, width, height, r, self.track_color())
         fill_w: i32 = (width * p) / 100
         if fill_w > 0:
-            commands.push_fill_rect(x, y, fill_w, height, self.theme.accent)
-        commands.push_outline_rect(x, y, width, height, self.theme.border, self.theme.border_width)
+            fill_x: i32 = x
+            if self.is_rtl() == 1:
+                fill_x = x + width - fill_w
+            fill_r: i32 = r
+            if fill_r > fill_w / 2:
+                fill_r = fill_w / 2
+            commands.push_fill_rounded_rect(fill_x, y, fill_w, height, fill_r, self.theme.accent)
         self.push_commands(commands)
 
     # ---------------------------------------------------------------
@@ -471,11 +481,11 @@ attach SoorynApp:
 
         # --- Render ---
         commands: UIDrawList = self.commands
-        border_color: UIColor = self.theme.border
+        border_color: UIColor = self.control_border_color()
         if focused == 1:
             border_color = self.theme.accent
         elif hovered == 1:
-            border_color = self.theme.surface_hover
+            border_color = self.mix_colors(self.control_border_color(), self.theme.text, 35)
         r: i32 = self.theme.corner_radius
         if self.field_radius >= 0:
             r = self.field_radius
@@ -810,7 +820,7 @@ attach SoorynApp:
         fill: UIColor = self.theme.surface
         if hovered == 1:
             fill = self.theme.surface_hover
-        border: UIColor = self.theme.border
+        border: UIColor = self.control_border_color()
         if is_open == 1:
             border = self.theme.accent
         r: i32 = self.dropdown_radius(height)

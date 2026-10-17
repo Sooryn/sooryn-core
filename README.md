@@ -238,6 +238,19 @@ application is not limited to a fixed widget count.
 corner radii. `SoorynTheme.dark()` is the built-in default and
 `SoorynTheme.light()` provides the matching light palette.
 
+Both palettes meet WCAG 2.1 contrast, and `tests/contrast.dlt` measures it:
+4.5:1 for text, a button's label on the accent included, and 3:1 for what
+marks a control. Three colours make that hold:
+
+- `on_accent`: text and marks drawn on the accent (a primary button's
+  label, a check mark, a selected row), as `on-primary` is in design
+  systems. Unset, it is white or near-black, whichever reads on the accent.
+- `control_border`: the outline of something you operate (a field, a
+  checkbox, a radio, a dropdown, a secondary button), at least 3:1 against
+  what it sits on. `border` stays the quieter line of panels and dividers.
+- `track`: the empty part of a slider, a progress bar and an off switch, so
+  an off switch is still a switch and a slider still shows its length.
+
 ## Testing without a window
 
 `SoorynApp.headless(width, height)` is the offscreen twin of `SoorynApp.create`. It

@@ -286,7 +286,7 @@ attach SoorynApp:
         if self.tb_selected_ptr != 0:
             selected = Memory.read_i32(self.tb_selected_ptr)
         if self.tb_row_index == selected:
-            color = self.theme.background
+            color = self.on_accent_color()
 
         commands: UIDrawList = self.commands
         self.push_clip(left, self.tb_row_y, w - 4, self.tb_row_height)

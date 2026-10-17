@@ -41,7 +41,7 @@ attach SoorynApp:
 
         picked_t: i32 = self.anim(id, chosen * 100, 900)
         hover_t: i32 = self.anim_hover(self.mix_id(id, 7), hovered)
-        ring: UIColor = self.mix_colors(self.theme.border, self.theme.text, hover_t)
+        ring: UIColor = self.mix_colors(self.control_border_color(), self.theme.text, hover_t)
         ring = self.mix_colors(ring, self.theme.accent, picked_t)
 
         commands: UIDrawList = self.commands
@@ -129,7 +129,7 @@ attach SoorynApp:
         commands: UIDrawList = self.commands
         r: i32 = self.theme.corner_radius
         commands.push_fill_rounded_rect(x, y, width, height, r, self.theme.surface)
-        commands.push_outline_rounded_rect(x, y, width, height, r, self.theme.border, self.theme.border_width)
+        commands.push_outline_rounded_rect(x, y, width, height, r, self.control_border_color(), self.theme.border_width)
 
         down_fill: UIColor = self.mix_colors(self.theme.surface, self.theme.surface_hover, self.anim_hover(self.mix_id(id, 3), over_down))
         up_fill: UIColor = self.mix_colors(self.theme.surface, self.theme.surface_hover, self.anim_hover(self.mix_id(id, 5), over_up))
@@ -179,7 +179,7 @@ attach SoorynApp:
 
         text_color: UIColor = self.theme.text
         if selected == 1:
-            text_color = self.theme.background
+            text_color = self.on_accent_color()
 
         if has_children == 1:
             # The twisty turns as the branch opens, so the state is legible

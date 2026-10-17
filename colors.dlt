@@ -1,0 +1,29 @@
+# ============================
+#  Sooryn Theme Colours, Resolved
+# ============================
+# The theme colours that may be left unset (0), each with the value it
+# stands for. Widgets read these rather than the raw fields, so a theme
+# built field by field still gets readable text on the accent and visible
+# control outlines.
+
+attach SoorynApp:
+    fun on_accent_color(self) -> UIColor:
+        if self.theme.on_accent != 0:
+            return self.theme.on_accent
+        # Perceived lightness (Rec. 601 luma); above the middle, dark text
+        # reads better than white.
+        c: i32 = self.theme.accent
+        luma: i32 = (((c >> 16) & 255) * 299 + ((c >> 8) & 255) * 587 + (c & 255) * 114) / 1000
+        if luma > 150:
+            return ui_rgb(12, 16, 18)
+        return ui_rgb(255, 255, 255)
+
+    fun control_border_color(self) -> UIColor:
+        if self.theme.control_border != 0:
+            return self.theme.control_border
+        return self.theme.border
+
+    fun track_color(self) -> UIColor:
+        if self.theme.track != 0:
+            return self.theme.track
+        return self.mix_colors(self.theme.surface, self.control_border_color(), 40)

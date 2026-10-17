@@ -21,6 +21,7 @@ load sooryn/direction
 load sooryn/scale
 load sooryn/system_font
 load sooryn/frames
+load sooryn/colors
 load sooryn/focus
 load sooryn/textedit
 load sooryn/clipboard

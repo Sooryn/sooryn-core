@@ -39,6 +39,18 @@ struct SoorynTheme:
     # The translucent layer a modal lays over the page, so the page stays
     # visible but recedes. 0 means unset: half-transparent black.
     scrim: UIColor = 0
+    # Text and marks drawn on the accent (a primary button's label, a check
+    # mark, the selected row), as `on-primary` is in design systems. 0 means
+    # unset: white or near-black, whichever reads on the accent.
+    on_accent: UIColor = 0
+    # The outline of something you operate (a field, a checkbox, a radio, a
+    # dropdown), at least 3:1 against what it sits on, as WCAG asks of a
+    # control's boundary. `border` stays the quieter line of panels and
+    # dividers. 0 means unset: `border`.
+    control_border: UIColor = 0
+    # The empty part of a slider, a progress bar and an off switch. 0 means
+    # unset: between the surface and control_border.
+    track: UIColor = 0
     # 1: popups and dialogs fade in as they open. 0: they appear at once,
     # for people who ask for reduced motion (CSS prefers-reduced-motion).
     motion: i32 = 1
@@ -63,7 +75,10 @@ attach SoorynTheme:
             focus_ring_width=1,
             focus_ring_offset=2,
             focus_ring_color=ui_rgb(229, 141, 110),
-            scrim=ui_rgba(0, 0, 0, 150)
+            scrim=ui_rgba(0, 0, 0, 150),
+            on_accent=ui_rgb(12, 16, 18),
+            control_border=ui_rgb(96, 118, 128),
+            track=ui_rgb(58, 74, 82)
         )
 
     static fun light() -> SoorynTheme:
@@ -75,7 +90,7 @@ attach SoorynTheme:
             text=ui_rgb(24, 31, 35),
             muted_text=ui_rgb(91, 106, 113),
             accent=ui_rgb(190, 84, 54),
-            accent_hover=ui_rgb(213, 104, 72),
+            accent_hover=ui_rgb(166, 64, 38),
             border=ui_rgb(177, 190, 197),
             danger=ui_rgb(204, 48, 57),
             spacing=12,
@@ -85,7 +100,10 @@ attach SoorynTheme:
             focus_ring_width=1,
             focus_ring_offset=2,
             focus_ring_color=ui_rgb(213, 104, 72),
-            scrim=ui_rgba(16, 24, 28, 96)
+            scrim=ui_rgba(16, 24, 28, 96),
+            on_accent=ui_rgb(255, 255, 255),
+            control_border=ui_rgb(122, 136, 144),
+            track=ui_rgb(198, 208, 214)
         )
 
 fun sooryn_theme_dark() -> SoorynTheme:
