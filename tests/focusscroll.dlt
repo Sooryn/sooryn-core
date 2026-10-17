@@ -1,0 +1,136 @@
+import sooryn
+
+# Keyboard focus moved to a widget scrolled out of its scroll view brings the
+# widget into view, as a browser scrolls to a field you Tab to; focus taken
+# by a click scrolls nothing.
+
+VIEW_X: i32 = 10
+VIEW_Y: i32 = 10
+VIEW_W: i32 = 220
+VIEW_H: i32 = 100
+ROWS: i32 = 10
+ROW_STEP: i32 = 40
+ROW_H: i32 = 32
+
+g_top: i32 = 0
+g_text: i64 = 0
+
+fun frame(app: SoorynApp, view: i64):
+    if app.begin_offscreen() == 1:
+        g_top = app.scroll_view_begin(VIEW_X, VIEW_Y, VIEW_W, VIEW_H, view)
+        i: i32 = 0
+        while i < ROWS - 1:
+            app.button(VIEW_X + 4, g_top + i * ROW_STEP, 150, ROW_H, "Row")
+            i = i + 1
+        # The last row is a text field, which marks focus with its border.
+        app.text_input(VIEW_X + 4, g_top + (ROWS - 1) * ROW_STEP, 150, ROW_H, g_text, 31)
+        app.scroll_view_end()
+        app.end()
+
+fun settle(app: SoorynApp, view: i64):
+    n: i32 = 0
+    while n < 120:
+        frame(app, view)
+        n = n + 1
+
+# 1 when row `row` lies wholly inside the view.
+fun row_shown(row: i32) -> i32:
+    top: i32 = g_top + row * ROW_STEP
+    if top >= VIEW_Y and top + ROW_H <= VIEW_Y + VIEW_H:
+        return 1
+    return 0
+
+fun tab(app: SoorynApp, view: i64, back: i32):
+    app.inject_modifiers(back, 0, 0)
+    app.inject_tab()
+    frame(app, view)
+    app.inject_modifiers(0, 0, 0)
+    settle(app, view)
+
+fun main() -> i32:
+    app: SoorynApp = SoorynApp.headless(300, 200)
+    view: i64 = app.alloc_scroll()
+    g_text = app.alloc_buf(32)
+    frame(app, view)
+    frame(app, view)
+
+    # Tab through every row: each one is wholly in view once it has focus.
+    row: i32 = 0
+    while row < ROWS:
+        tab(app, view, 0)
+        if row_shown(row) == 0:
+            print(@"sooryn focusscroll: Tab to row {row} left it out of view")
+            return 1
+        row = row + 1
+    if app.scroll_offset(view) == 0:
+        print("sooryn focusscroll: the view never scrolled")
+        return 2
+
+    # Tab past the last row wraps to the first, which comes back into view.
+    tab(app, view, 0)
+    if row_shown(0) == 0:
+        print("sooryn focusscroll: wrapping to the first row left it out of view")
+        return 3
+
+    # Shift+Tab from the first wraps to the last, the text field.
+    tab(app, view, 1)
+    if row_shown(ROWS - 1) == 0:
+        print("sooryn focusscroll: Shift+Tab to the last row left it out of view")
+        return 4
+
+    # Shift+Tab walks back up, revealing each row above.
+    row = ROWS - 2
+    while row >= 0:
+        tab(app, view, 1)
+        if row_shown(row) == 0:
+            print(@"sooryn focusscroll: Shift+Tab to row {row} left it out of view")
+            return 5
+        row = row - 1
+
+    # Only as far as needed: a row already in view moves nothing.
+    before: i32 = app.scroll_offset(view)
+    tab(app, view, 0)
+    if app.scroll_offset(view) != before:
+        print("sooryn focusscroll: focusing a row already in view scrolled")
+        return 6
+
+    # A click focuses without scrolling, even on a row partly out of view.
+    # Row 2 sits at 90..122 with the view at the top: half hidden.
+    app.inject_mouse_move(VIEW_X + 40, 100)
+    app.inject_left_down()
+    frame(app, view)
+    app.inject_left_up()
+    settle(app, view)
+    if app.scroll_offset(view) != before:
+        print("sooryn focusscroll: focus taken by a click scrolled the view")
+        return 7
+
+    # A widget keeps its identity while its view scrolls: a focused field
+    # scrolled by the wheel keeps its focus and its caret.
+    app.inject_mouse_move(VIEW_X + 40, VIEW_Y + 40)
+    app.inject_wheel(-50.0)
+    frame(app, view)
+    app.inject_wheel(0.0)
+    settle(app, view)
+    # The field is at 360..392 in the content, scrolled 304: 66..98 on screen.
+    app.inject_mouse_move(VIEW_X + 40, 80)
+    app.inject_left_down()
+    frame(app, view)
+    app.inject_left_up()
+    frame(app, view)
+    app.inject_text("ab")
+    frame(app, view)
+    app.inject_mouse_move(VIEW_X + 40, VIEW_Y + 40)
+    app.inject_wheel(1.0)
+    frame(app, view)
+    app.inject_wheel(0.0)
+    settle(app, view)
+    app.inject_text("c")
+    frame(app, view)
+    if Str.equals(g_text as str, "abc") == false:
+        print("sooryn focusscroll: scrolling took focus away from the field being typed in")
+        return 8
+
+    app.destroy()
+    print("sooryn focusscroll: ok")
+    return 0

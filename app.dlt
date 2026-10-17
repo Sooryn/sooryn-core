@@ -75,11 +75,16 @@ struct SoorynApp:
     sv_content_w: i32 = 0
     sv_top: i32 = 0
     sv_start: i32 = 0
+    # 1 between scroll_view_begin and scroll_view_end.
+    sv_open: i32 = 0
 
     # ---- Hit clip (see hit.dlt) ----
     hit_clips: i64 = 0
     hit_clip_top: i32 = 0
     hit_clip_capacity: i32 = 0
+
+    # ---- Keyboard focus brought into view (see focus.dlt) ----
+    focus_reveal: i32 = 0
 
     # ---- Pointer cursor (see cursor.dlt) ----
     cursor_wanted: i32 = 0
@@ -619,6 +624,14 @@ attach SoorynApp:
             # under one push_id would be the same widget and share a caret.
             h = (h ^ self.current_id()) * prime
             h = (h ^ (self.next_scope_seq() as i64)) * prime
+        elif self.sv_open == 1:
+            # Inside a scroll view the place is the one in the content, so
+            # scrolling does not make a widget a different widget (its focus,
+            # its open dropdown, its drag); the view itself keeps two views'
+            # contents apart.
+            h = (h ^ self.sv_state) * prime
+            h = (h ^ (x as i64)) * prime
+            h = (h ^ ((y - self.sv_top) as i64)) * prime
         else:
             h = (h ^ (x as i64)) * prime
             h = (h ^ (y as i64)) * prime

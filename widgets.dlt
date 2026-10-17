@@ -427,6 +427,7 @@ attach SoorynApp:
         focused: i32 = 0
         if self.focus_id == id:
             focused = 1
+            self.reveal_focused(x, y, width, height)
 
         length: i32 = self.text_length(buf, max_len)
         changed: i32 = 0

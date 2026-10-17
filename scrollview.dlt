@@ -62,6 +62,7 @@ attach SoorynApp:
         self.sv_w = width
         self.sv_h = height
         self.sv_state = state
+        self.sv_open = 1
         if state == 0:
             self.sv_content_w = width
             self.sv_top = y
@@ -120,6 +121,7 @@ attach SoorynApp:
 
     fun scroll_view_end(self):
         self.pop_clip()
+        self.sv_open = 0
         state: i64 = self.sv_state
         if state == 0:
             return

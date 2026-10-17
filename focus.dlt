@@ -71,6 +71,7 @@ attach SoorynApp:
             self.focus_id = id
             self.focus_take_next = 0
             self.focus_move = 0
+            self.focus_reveal = 1
         elif self.focus_move == 1 and self.focus_id == id:
             self.focus_take_next = 1
         elif self.focus_move == -1 and self.focus_id == id:
@@ -80,6 +81,7 @@ attach SoorynApp:
             else:
                 self.focus_id = self.focus_prev
                 self.focus_move = 0
+                self.focus_reveal = 1
 
         self.focus_prev = id
         self.focus_last = id
@@ -105,6 +107,7 @@ attach SoorynApp:
                 self.focus_id = self.focus_first
             else:
                 self.focus_id = self.focus_last
+            self.focus_reveal = 1
             self.focus_move = 0
             self.focus_take_next = 0
             self.focus_wrap_to_last = 0
@@ -113,9 +116,11 @@ attach SoorynApp:
         if self.focus_take_next == 1:
             self.focus_id = self.focus_first
             self.focus_take_next = 0
+            self.focus_reveal = 1
         if self.focus_wrap_to_last == 1:
             self.focus_id = self.focus_last
             self.focus_wrap_to_last = 0
+            self.focus_reveal = 1
         self.focus_move = 0
 
     # ---------------------------------------------------------------
@@ -162,11 +167,40 @@ attach SoorynApp:
     fun focus_by_pointer(self, id: i64):
         self.focus_id = id
         self.focus_visible = 0
+        self.focus_reveal = 0
 
     # Focus taken by the keyboard, for a widget that moves focus itself.
     fun focus_by_keyboard(self, id: i64):
         self.focus_id = id
         self.focus_visible = 1
+        self.focus_reveal = 1
+
+    # ---------------------------------------------------------------
+    # Bringing focus into view
+    # ---------------------------------------------------------------
+    # Focus that the keyboard moves to a widget scrolled out of its scroll
+    # view brings the widget into view, as a browser scrolls to a field you
+    # Tab to: just far enough to show it with its ring, gliding there. Focus
+    # taken by a click scrolls nothing; the widget is already under the
+    # pointer.
+    #
+    # The focused widget calls this with its rectangle as it is drawn. Every
+    # built-in widget does (through its focus ring, or directly); a custom
+    # focusable widget should too.
+    fun reveal_focused(self, x: i32, y: i32, width: i32, height: i32):
+        if self.focus_reveal == 0:
+            return
+        self.focus_reveal = 0
+        if self.sv_open == 0 or self.sv_state == 0:
+            return
+        margin: i32 = self.theme.focus_ring_offset + self.theme.focus_ring_width + 4
+        top: i32 = y - margin - self.sv_top
+        bottom: i32 = y + height + margin - self.sv_top
+        before: i32 = Memory.read_i32(self.sv_state + SOORYN_SV_TARGET)
+        self.scroll_into_view(self.sv_state, top, bottom, self.sv_h)
+        if Memory.read_i32(self.sv_state + SOORYN_SV_TARGET) != before:
+            # The glide starts next frame; keep the loop awake for it.
+            self.anim_active = self.anim_active + 1
 
     # SOORYN_FOCUS_RING_KEYBOARD (the default), _ALWAYS or _NEVER.
     fun set_focus_ring(self, mode: i32):
@@ -184,6 +218,7 @@ attach SoorynApp:
     # radio gets a circle. Adding the gap to the radius keeps the ring
     # concentric with the shape rather than merely near it.
     fun focus_ring_rounded(self, x: i32, y: i32, width: i32, height: i32, radius: i32):
+        self.reveal_focused(x, y, width, height)
         if self.focus_ring_shown() == 0:
             return
         thickness: i32 = self.theme.focus_ring_width

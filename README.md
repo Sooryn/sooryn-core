@@ -320,13 +320,22 @@ app.scroll_view_end()
   little room below the last item, as a CSS scroll height includes padding.
 - **Rows scrolled out of view take no clicks**, and nothing scrolls under a
   popup or behind a modal.
+- **Tab brings focus into view.** Keyboard focus moved to a widget scrolled
+  out of sight scrolls just far enough to show it with its focus ring, and
+  glides there. Focus taken by a click scrolls nothing. A custom focusable
+  widget calls `app.reveal_focused(x, y, w, h)` (the focus ring already does).
+- **Scrolling does not change who a widget is.** Inside a view a widget's
+  identity comes from its place in the content, so a field being typed in
+  keeps its focus and caret, and an open dropdown stays open, while the view
+  scrolls.
 - `scroll_offset(view)` reads the position. `scroll_into_view(view, top,
   bottom, height)` brings a range into view.
 
 Scrollbars are a thin rounded thumb with no track, as current browsers draw
 them. It widens and brightens under the pointer and while dragged.
 `tests/scrollview.dlt` covers measuring, gliding, clamping, clicks and
-content that fits.
+content that fits; `tests/focusscroll.dlt` covers Tab, Shift+Tab, wrapping,
+clicks and identity while scrolling.
 
 ## Layers and hit testing
 
