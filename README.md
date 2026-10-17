@@ -350,12 +350,21 @@ as on a web page:
   in the frame, is not cut by its panel, owns the pointer over its
   rectangle, casts a shadow, and closes when the pointer is pressed anywhere
   outside it.
-- **A modal is modal.** It is drawn above the page with a raised panel, and
-  nothing behind it takes the pointer while it is open.
+- **A modal is modal.** It is a raised, rounded panel over a translucent
+  scrim (`theme.scrim`) that dims the page without hiding it, and nothing
+  behind it takes the pointer while it is open.
+- **Popups and dialogs fade in.** A dropdown list fades in over 120 ms and a
+  modal over 160 ms, easing out, and both close at once, as desktop menus
+  and dialogs do. `theme.motion = 0` makes them appear at once, for people
+  who ask for reduced motion.
+- **An open list is a menu.** It floats just below its field with rounded
+  corners and room inside, and the hovered and chosen items are rounded
+  highlights, as in current design systems.
 
 Popups and modals record into an overlay draw list rendered after the frame,
 so they are on top whatever order the application draws in.
-`tests/layers.dlt` checks each case and fails against the previous release.
+`tests/layers.dlt` checks each case and fails against the previous release;
+`tests/fade.dlt` checks the fade, the scrim and `theme.motion`.
 
 ## Clipboard
 

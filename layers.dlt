@@ -22,6 +22,9 @@
 SOORYN_LAYER_BASE: i32 = 0
 SOORYN_LAYER_POPUP: i32 = 1
 SOORYN_LAYER_MODAL: i32 = 2
+# How long a popup and a dialog take to fade in, in microseconds.
+SOORYN_FADE_POPUP_US: i64 = 120000
+SOORYN_FADE_MODAL_US: i64 = 160000
 
 attach SoorynApp:
     # Start drawing into the overlay at this layer. Nested calls stay in
@@ -88,3 +91,47 @@ attach SoorynApp:
     fun close_layers(self):
         while self.layer_depth > 0:
             self.leave_layer()
+
+    # ---------------------------------------------------------------
+    # Fading in
+    # ---------------------------------------------------------------
+    # A menu or a dialog that pops into existence reads as a glitch; one that
+    # fades in over a few frames reads as something arriving. They fade in
+    # and close at once, as the menus and dialogs of the desktop do.
+    #
+    # The fade is applied to what the popup or modal drew this frame: every
+    # colour from `start` on in the overlay has its alpha scaled, so the
+    # widgets inside need no part in it. theme.motion = 0 turns it off.
+
+    # Eased 0..1000 for `elapsed` of `duration` (ease-out cubic: fast, then
+    # settling, as CSS ease-out roughly is).
+    fun fade_amount(self, elapsed: i64, duration: i64) -> i32:
+        if self.theme.motion == 0 or duration <= 0 or elapsed >= duration:
+            return 1000
+        if elapsed <= 0:
+            return 0
+        remaining: i64 = 1000 - (elapsed * 1000) / duration
+        return (1000 - (remaining * remaining * remaining) / 1000000) as i32
+
+    # Scale the alpha of every colour drawn since `start` in the current
+    # list. Images keep theirs.
+    fun fade_commands(self, start: i32, amount: i32):
+        if amount >= 1000:
+            return
+        list: UIDrawList = self.commands
+        i: i32 = start
+        while i < list.count:
+            at: i64 = (i as i64) * 4
+            kind: i32 = Memory.read_i32(list.kinds + at)
+            if kind != UI_CMD_IMAGE and kind != UI_CMD_CLIP_PUSH and kind != UI_CMD_CLIP_POP and kind != UI_CMD_CLEAR:
+                Memory.write_i32(list.colors + at, sooryn_fade_color(Memory.read_i32(list.colors + at), amount))
+                if kind == UI_CMD_TEXT_BG:
+                    Memory.write_i32(list.backgrounds + at, sooryn_fade_color(Memory.read_i32(list.backgrounds + at), amount))
+            i = i + 1
+        self.anim_active = self.anim_active + 1
+
+# A colour with its alpha scaled by amount/1000.
+fun sooryn_fade_color(color: i32, amount: i32) -> i32:
+    alpha: i32 = (color >> 24) & 255
+    alpha = (alpha * amount) / 1000
+    return (color & 16777215) | (alpha << 24)

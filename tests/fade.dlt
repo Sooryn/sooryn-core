@@ -1,0 +1,138 @@
+import sooryn
+
+# Popups and dialogs fade in as they open and close at once; a modal's scrim
+# dims the page without hiding it; theme.motion = 0 turns the fade off.
+
+g_selected: i64 = 0
+
+fun modal_frame(app: SoorynApp, show: i32):
+    app.inject_delta_us(16666)
+    if app.begin_offscreen() == 1:
+        app.button(20, 20, 120, 32, "Behind")
+        if show == 1 and app.modal_begin(200, 120, "Dialog") == 1:
+            app.modal_end()
+        app.end()
+
+fun dropdown_frame(app: SoorynApp):
+    app.inject_delta_us(16666)
+    if app.begin_offscreen() == 1:
+        if app.dropdown_begin(20, 20, 160, 28, g_selected, "Pick") == 1:
+            app.dropdown_item("One")
+            app.dropdown_item("Two")
+        app.dropdown_end()
+        app.end()
+
+# 1 when every channel of `c` lies strictly between those of `a` and `b`
+# (in either order), or equals them where they agree.
+fun between(c: i32, a: i32, b: i32) -> i32:
+    shift: i32 = 0
+    strict: i32 = 0
+    while shift < 24:
+        cc: i32 = (c >> shift) & 255
+        aa: i32 = (a >> shift) & 255
+        bb: i32 = (b >> shift) & 255
+        lo: i32 = aa
+        hi: i32 = bb
+        if lo > hi:
+            lo = bb
+            hi = aa
+        if cc < lo or cc > hi:
+            return 0
+        if cc > lo and cc < hi:
+            strict = 1
+        shift = shift + 8
+    return strict
+
+fun same_rgb(a: i32, b: i32) -> i32:
+    if (a & 16777215) == (b & 16777215):
+        return 1
+    return 0
+
+fun main() -> i32:
+    app: SoorynApp = SoorynApp.headless(400, 240)
+    page: i32 = app.theme.background
+    panel: i32 = app.theme.surface
+
+    # ---- The modal fades in: invisible on its first frame, part way after
+    # a few, whole once settled.
+    modal_frame(app, 0)
+    modal_frame(app, 1)
+    if same_rgb(app.pixel_at(200, 130), page) == 0:
+        print("sooryn fade: a modal was drawn whole on the frame it opened")
+        return 1
+    if app.animating() == 0:
+        print("sooryn fade: a fading modal did not keep frames coming")
+        return 2
+    modal_frame(app, 1)
+    modal_frame(app, 1)
+    if between(app.pixel_at(200, 130), page, panel) == 0:
+        print("sooryn fade: the modal did not fade in part way")
+        return 3
+    n: i32 = 0
+    while n < 20:
+        modal_frame(app, 1)
+        n = n + 1
+    if same_rgb(app.pixel_at(200, 130), panel) == 0:
+        print("sooryn fade: the modal did not finish fading in")
+        return 4
+    if app.animating() == 1:
+        print("sooryn fade: a settled modal kept animating")
+        return 5
+
+    # ---- The scrim dims the page without hiding it: the button behind still
+    # shows, darker than it was.
+    on_page: i32 = app.pixel_at(380, 230)
+    on_button: i32 = app.pixel_at(30, 24)
+    if same_rgb(on_page, on_button) == 1:
+        print("sooryn fade: the modal backdrop hid the page instead of dimming it")
+        return 6
+    if same_rgb(on_page, page) == 1:
+        print("sooryn fade: the modal backdrop did not dim the page")
+        return 7
+
+    # ---- It closes at once.
+    modal_frame(app, 0)
+    if same_rgb(app.pixel_at(380, 230), page) == 0:
+        print("sooryn fade: the scrim lingered after the modal closed")
+        return 8
+
+    # ---- Reopened, it fades in again from nothing.
+    modal_frame(app, 1)
+    if same_rgb(app.pixel_at(200, 130), page) == 0:
+        print("sooryn fade: a reopened modal did not fade in again")
+        return 9
+
+    # ---- theme.motion = 0: whole at once.
+    still: SoorynApp = SoorynApp.headless(400, 240)
+    still.theme.motion = 0
+    modal_frame(still, 0)
+    modal_frame(still, 1)
+    if same_rgb(still.pixel_at(200, 130), panel) == 0:
+        print("sooryn fade: with motion off the modal still faded")
+        return 10
+
+    # ---- The dropdown list fades in too.
+    menu: SoorynApp = SoorynApp.headless(400, 240)
+    g_selected = menu.alloc_int(-1)
+    dropdown_frame(menu)
+    menu.inject_mouse_move(60, 30)
+    menu.inject_left_down()
+    dropdown_frame(menu)
+    menu.inject_left_up()
+    # Item "Two" is at 76..104, away from the pointer.
+    if same_rgb(menu.pixel_at(100, 90), page) == 0:
+        print("sooryn fade: a dropdown list was drawn whole on the frame it opened")
+        return 11
+    n = 0
+    while n < 20:
+        dropdown_frame(menu)
+        n = n + 1
+    if same_rgb(menu.pixel_at(100, 90), panel) == 0:
+        print("sooryn fade: the dropdown list did not finish fading in")
+        return 12
+
+    app.destroy()
+    still.destroy()
+    menu.destroy()
+    print("sooryn fade: ok")
+    return 0

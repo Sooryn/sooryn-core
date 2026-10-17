@@ -163,12 +163,14 @@ fun main() -> i32:
 
     # ---------------------------------------------------------------
     # A square widget gets square corners. Same geometry as the button, so
-    # the only thing that differs is the shape the ring is following.
+    # the only thing that differs is the shape the ring is following: a
+    # dropdown in a theme with square corners.
     # ---------------------------------------------------------------
     b: SoorynApp = SoorynApp.headless(300, 200)
     if b.is_valid() == 0:
         print("sooryn focusring: the second app would not start")
         return 18
+    b.theme.corner_radius = 0
     choice: i64 = b.alloc_int(0)
     b.inject_mouse_move(290, 190)
     # Tab with nothing focused only lands focus when the frame resolves, by

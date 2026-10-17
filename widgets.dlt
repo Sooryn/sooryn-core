@@ -810,8 +810,12 @@ attach SoorynApp:
         fill: UIColor = self.theme.surface
         if hovered == 1:
             fill = self.theme.surface_hover
-        commands.push_fill_rect(x, y, width, height, fill)
-        commands.push_outline_rect(x, y, width, height, self.theme.border, self.theme.border_width)
+        border: UIColor = self.theme.border
+        if is_open == 1:
+            border = self.theme.accent
+        r: i32 = self.dropdown_radius(height)
+        commands.push_fill_rounded_rect(x, y, width, height, r, fill)
+        commands.push_outline_rounded_rect(x, y, width, height, r, border, self.theme.border_width)
         label_left: i32 = self.mirror_x(x, width, x + 10, self.text_width(selected_label))
         commands.push_text(label_left, y + (height - self.text_height()) / 2, selected_label, self.theme.text)
         chev_cx: i32 = self.mirror_x(x, width, x + width - 14, 8) + 4
@@ -820,20 +824,45 @@ attach SoorynApp:
         commands.push_line(chev_cx,     chev_cy + 2, chev_cx + 4, chev_cy - 2, self.theme.muted_text, 1)
         self.push_commands(commands)
         if focused == 1:
-            self.focus_ring_rounded(x, y, width, height, 0)
+            self.focus_ring_rounded(x, y, width, height, r)
         # An open list is a popup: above everything, unclipped, and the only
-        # thing taking the pointer over its rectangle. Its shadow uses the
-        # height it had last frame, the one known before the items are drawn.
+        # thing taking the pointer over its rectangle. Its shadow and its
+        # background use the height it had last frame, the one known before
+        # the items are drawn. On the frame it opens it is still invisible
+        # (it fades in), and its items fill their own rows.
         self.dd_in_layer = 0
+        self.dd_has_bg = 0
         if is_open == 1:
             self.enter_layer(SOORYN_LAYER_POPUP)
             self.dd_in_layer = 1
+            self.popup_fade_start = self.commands.count
             if self.popup_prev == 1 and self.popup_prev_id == id:
-                self.elevation(x, y + height, width, self.popup_prev_h, 0, 4)
+                self.popup_shown_us = self.popup_shown_us + self.frame_delta_us
+                list_y: i32 = y + height + SOORYN_MENU_GAP
+                list_r: i32 = self.dropdown_radius(height)
+                self.elevation(x, list_y, width, self.popup_prev_h, list_r, 4)
+                commands = self.commands
+                commands.push_fill_rounded_rect(x, list_y, width, self.popup_prev_h, list_r, self.theme.surface)
+                self.push_commands(commands)
+                self.dd_has_bg = 1
+            else:
+                self.popup_shown_us = 0
         return is_open
 
+    # The corner of a dropdown's field and list: the theme's, as a text
+    # field's is.
+    fun dropdown_radius(self, height: i32) -> i32:
+        r: i32 = self.theme.corner_radius
+        if r < 0:
+            r = 0
+        if r > height / 2:
+            r = height / 2
+        return r
+
     fun dropdown_item(self, label: str) -> i32:
-        item_y: i32 = self.dd_y + self.dd_h + self.dd_item_idx * self.dd_h
+        item_y: i32 = self.dd_y + self.dd_h + SOORYN_MENU_GAP + SOORYN_MENU_PAD + self.dd_item_idx * self.dd_h
+        item_x: i32 = self.dd_x + SOORYN_MENU_PAD
+        item_w: i32 = self.dd_w - SOORYN_MENU_PAD * 2
         # Keyed by the dropdown plus this item's index rather than by the row
         # position, which moves whenever the dropdown does.
         self.push_id(self.dd_id)
@@ -842,7 +871,7 @@ attach SoorynApp:
         self.pop_id()
         self.pop_id()
         mouse: UIMouseState = self.input_state.mouse
-        hovered: i32 = self.hit(self.dd_x, item_y, self.dd_w, self.dd_h)
+        hovered: i32 = self.hit(item_x, item_y, item_w, self.dd_h)
         if hovered == 1:
             self.set_hover(id)
 
@@ -850,13 +879,21 @@ attach SoorynApp:
         if Memory.read_i32(self.dd_selected_ptr) == self.dd_item_idx:
             selected = 1
 
+        # The hovered and the chosen item are rounded highlights inside the
+        # list, as in a native menu.
         commands: UIDrawList = self.commands
-        fill: UIColor = self.theme.surface
+        if self.dd_has_bg == 0:
+            commands.push_fill_rect(self.dd_x, item_y, self.dd_w, self.dd_h, self.theme.surface)
+        highlight: UIColor = 0
         if hovered == 1:
-            fill = self.theme.surface_hover
+            highlight = self.theme.surface_hover
         elif selected == 1:
-            fill = self.theme.surface_active
-        commands.push_fill_rect(self.dd_x, item_y, self.dd_w, self.dd_h, fill)
+            highlight = self.theme.surface_active
+        if highlight != 0:
+            item_r: i32 = self.dropdown_radius(self.dd_h) - 2
+            if item_r < 0:
+                item_r = 0
+            commands.push_fill_rounded_rect(item_x, item_y, item_w, self.dd_h, item_r, highlight)
         item_left: i32 = self.mirror_x(self.dd_x, self.dd_w, self.dd_x + 10, self.text_width(label))
         commands.push_text(item_left, item_y + (self.dd_h - self.text_height()) / 2, label, self.theme.text)
         self.push_commands(commands)
@@ -871,22 +908,23 @@ attach SoorynApp:
         return picked
 
     fun dropdown_end(self):
+        list_y: i32 = self.dd_y + self.dd_h + SOORYN_MENU_GAP
+        list_h: i32 = self.dd_item_idx * self.dd_h + SOORYN_MENU_PAD * 2
         if self.dd_item_idx > 0:
-            h: i32 = self.dd_item_idx * self.dd_h
             commands: UIDrawList = self.commands
-            commands.push_outline_rect(self.dd_x, self.dd_y + self.dd_h, self.dd_w, h, self.theme.border, self.theme.border_width)
+            commands.push_outline_rounded_rect(self.dd_x, list_y, self.dd_w, list_h, self.dropdown_radius(self.dd_h), self.theme.border, self.theme.border_width)
             self.push_commands(commands)
         if self.dd_in_layer == 1:
-            list_h: i32 = self.dd_item_idx * self.dd_h
-            self.claim_popup(self.dd_id, self.dd_x, self.dd_y + self.dd_h, self.dd_w, list_h)
+            self.claim_popup(self.dd_id, self.dd_x, list_y, self.dd_w, list_h)
             # A press anywhere but the field or the list closes it, as a
             # menu on a web page does.
             mouse: UIMouseState = self.input_state.mouse
             if self.dd_open_id == self.dd_id and mouse.left_pressed() == 1:
                 on_field: i32 = mouse.is_over_xy(self.dd_x, self.dd_y, self.dd_w, self.dd_h)
-                on_list: i32 = mouse.is_over_xy(self.dd_x, self.dd_y + self.dd_h, self.dd_w, list_h)
+                on_list: i32 = mouse.is_over_xy(self.dd_x, list_y, self.dd_w, list_h)
                 if on_field == 0 and on_list == 0:
                     self.dd_open_id = 0
+            self.fade_commands(self.popup_fade_start, self.fade_amount(self.popup_shown_us, SOORYN_FADE_POPUP_US))
             self.leave_layer()
             self.dd_in_layer = 0
 
@@ -898,28 +936,42 @@ attach SoorynApp:
         if self.md_active == 1:
             return 0
         self.md_active = 1
+        if self.modal_prev == 1:
+            self.modal_shown_us = self.modal_shown_us + self.frame_delta_us
+        else:
+            self.modal_shown_us = 0
         self.modal_now = 1
         self.enter_layer(SOORYN_LAYER_MODAL)
+        self.modal_fade_start = self.commands.count
         mx: i32 = (self.canvas_w - width) / 2
         my: i32 = (self.canvas_h - height) / 2
-        # A raised surface over a darkened page.
-        self.elevation(mx, my, width, height, 0, 8)
+        # A raised surface over a dimmed page: the scrim first, so the
+        # panel's shadow falls on it rather than under it.
+        scrim: UIColor = self.theme.scrim
+        if scrim == 0:
+            scrim = ui_rgba(0, 0, 0, 128)
         commands: UIDrawList = self.commands
-        # Backdrop over the whole canvas
-        commands.push_fill_rect(0, 0, self.canvas_w, self.canvas_h, self.theme.surface_active)
+        commands.push_fill_rect(0, 0, self.canvas_w, self.canvas_h, scrim)
+        self.push_commands(commands)
+        r: i32 = self.theme.corner_radius + 2
+        if r > height / 2:
+            r = height / 2
+        self.elevation(mx, my, width, height, r, 8)
+        commands = self.commands
         # Panel
-        commands.push_fill_rect(mx, my, width, height, self.theme.surface)
-        commands.push_outline_rect(mx, my, width, height, self.theme.border, self.theme.border_width)
-        # Title bar
+        commands.push_fill_rounded_rect(mx, my, width, height, r, self.theme.surface)
+        commands.push_outline_rounded_rect(mx, my, width, height, r, self.theme.border, self.theme.border_width)
+        # Title, over a divider
         if Memory.strlen(title) > 0:
-            commands.push_fill_rect(mx, my, width, 32, self.theme.background)
-            commands.push_text(mx + 14, my + (32 - self.text_height()) / 2, title, self.theme.text)
-            commands.push_line(mx, my + 32, mx + width, my + 32, self.theme.border, 1)
+            title_left: i32 = self.mirror_x(mx, width, mx + 14, self.text_width(title))
+            commands.push_text(title_left, my + (32 - self.text_height()) / 2, title, self.theme.text)
+            commands.push_line(mx + 1, my + 32, mx + width - 1, my + 32, self.theme.border, 1)
         self.push_commands(commands)
         return 1
 
     fun modal_end(self):
         self.md_active = 0
+        self.fade_commands(self.modal_fade_start, self.fade_amount(self.modal_shown_us, SOORYN_FADE_MODAL_US))
         self.leave_layer()
 
     # ---------------------------------------------------------------

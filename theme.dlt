@@ -7,6 +7,10 @@
 SOORYN_TITLE_GAP: i32 = 4
 SOORYN_TITLE_RULE: i32 = 2
 SOORYN_TITLE_MIN_RULE: i32 = 24
+# An open dropdown list floats a little below its field, with room inside
+# around its items, as the menus of current design systems do.
+SOORYN_MENU_GAP: i32 = 4
+SOORYN_MENU_PAD: i32 = 4
 
 struct SoorynTheme:
     # 1: a hand over clickable controls (most web design systems); 0: the
@@ -32,6 +36,12 @@ struct SoorynTheme:
     focus_ring_width: i32 = 1
     focus_ring_offset: i32 = 2
     focus_ring_color: UIColor = 0
+    # The translucent layer a modal lays over the page, so the page stays
+    # visible but recedes. 0 means unset: half-transparent black.
+    scrim: UIColor = 0
+    # 1: popups and dialogs fade in as they open. 0: they appear at once,
+    # for people who ask for reduced motion (CSS prefers-reduced-motion).
+    motion: i32 = 1
 
 attach SoorynTheme:
     static fun dark() -> SoorynTheme:
@@ -52,7 +62,8 @@ attach SoorynTheme:
             corner_radius=6,
             focus_ring_width=1,
             focus_ring_offset=2,
-            focus_ring_color=ui_rgb(229, 141, 110)
+            focus_ring_color=ui_rgb(229, 141, 110),
+            scrim=ui_rgba(0, 0, 0, 150)
         )
 
     static fun light() -> SoorynTheme:
@@ -73,7 +84,8 @@ attach SoorynTheme:
             corner_radius=6,
             focus_ring_width=1,
             focus_ring_offset=2,
-            focus_ring_color=ui_rgb(213, 104, 72)
+            focus_ring_color=ui_rgb(213, 104, 72),
+            scrim=ui_rgba(16, 24, 28, 96)
         )
 
 fun sooryn_theme_dark() -> SoorynTheme:

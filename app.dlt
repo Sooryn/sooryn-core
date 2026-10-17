@@ -64,7 +64,16 @@ struct SoorynApp:
     popup_prev_y: i32 = 0
     popup_prev_w: i32 = 0
     popup_prev_h: i32 = 0
+    # How long the open modal and popup have been showing, and where their
+    # commands start in the overlay (see layers.dlt, fading in).
+    modal_shown_us: i64 = 0
+    modal_fade_start: i32 = 0
+    popup_shown_us: i64 = 0
+    popup_fade_start: i32 = 0
     dd_in_layer: i32 = 0
+    # 1 when the open list's background was drawn before its items (its
+    # height is known from the previous frame).
+    dd_has_bg: i32 = 0
 
     # ---- Scroll view (see scrollview.dlt) ----
     sv_x: i32 = 0
