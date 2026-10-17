@@ -1,0 +1,102 @@
+import sooryn
+
+# A tooltip appears after the pointer rests half a second, asking for its own
+# frame so an idle window still shows it; it is above everything drawn after
+# it; it stays where it appeared; it never leaves the window; a press hides it
+# until the pointer leaves.
+
+TIP: str = "Saves the document"
+
+g_cover: i32 = 1
+
+fun frame(app: SoorynApp, bx: i32, by: i32):
+    app.inject_delta_us(100000)
+    if app.begin_offscreen() == 1:
+        app.button(bx, by, 100, 32, "Save")
+        app.tooltip(app.widget_id(110, bx, by), TIP)
+        # Drawn after the tooltip, right where it opens below the button.
+        if g_cover == 1:
+            app.button(0, 100, 400, 140, "Cover")
+        app.end()
+
+fun frames(app: SoorynApp, bx: i32, by: i32, n: i32):
+    i: i32 = 0
+    while i < n:
+        frame(app, bx, by)
+        i = i + 1
+
+fun tip_w(app: SoorynApp) -> i32:
+    return app.text_width(TIP) + 16
+
+fun main() -> i32:
+    app: SoorynApp = SoorynApp.headless(400, 240)
+    surface: i32 = app.theme.surface_active
+
+    # Rest on the button: nothing yet, but the next frame is asked for at
+    # the moment the delay runs out.
+    app.inject_mouse_move(60, 70)
+    frame(app, 20, 60)
+    if app.tip_id != 0:
+        print("sooryn tooltip: shown before the delay")
+        return 1
+    if app.wake_at_us != app.hover_since_us + 500000:
+        print("sooryn tooltip: an idle window would never show it (no wake-up asked for)")
+        return 2
+
+    # After the delay it shows, below the pointer, above the button drawn
+    # after it.
+    frames(app, 20, 60, 8)
+    if app.tip_id == 0:
+        print("sooryn tooltip: not shown after the delay")
+        return 3
+    if app.tip_x != 60 or app.tip_y != 90:
+        print(@"sooryn tooltip: placed at {app.tip_x},{app.tip_y}, not just below the pointer")
+        return 4
+    if (app.pixel_at(app.tip_x + 4, app.tip_y + app.text_height() + 6) & 16777215) != (surface & 16777215):
+        print("sooryn tooltip: covered by a widget drawn after it")
+        return 5
+
+    # It stays where it appeared while the pointer moves on the widget.
+    app.inject_mouse_move(90, 75)
+    frames(app, 20, 60, 2)
+    if app.tip_x != 60 or app.tip_y != 90:
+        print("sooryn tooltip: followed the pointer instead of staying put")
+        return 6
+
+    # A press hides it, and it stays hidden while the pointer stays.
+    app.inject_left_down()
+    frame(app, 20, 60)
+    app.inject_left_up()
+    frames(app, 20, 60, 10)
+    if app.tip_id != 0:
+        print("sooryn tooltip: still shown after the widget was pressed")
+        return 7
+    # Leaving and coming back shows it again after the delay.
+    app.inject_mouse_move(300, 20)
+    frame(app, 20, 60)
+    app.inject_mouse_move(60, 70)
+    frames(app, 20, 60, 8)
+    if app.tip_id == 0:
+        print("sooryn tooltip: did not come back after the pointer left and returned")
+        return 8
+
+    # Near the bottom-right corner it opens above the pointer and inside the
+    # window.
+    g_cover = 0
+    edge: SoorynApp = SoorynApp.headless(400, 240)
+    edge.inject_mouse_move(380, 220)
+    frames(edge, 300, 200, 8)
+    if edge.tip_id == 0:
+        print("sooryn tooltip: not shown at the edge")
+        return 9
+    if edge.tip_x + tip_w(edge) > 396 or edge.tip_x < 4:
+        print(@"sooryn tooltip: ran past the window's side (x {edge.tip_x})")
+        return 10
+    if edge.tip_y + edge.text_height() + 10 > 220 - 6 + 1 or edge.tip_y < 4:
+        print(@"sooryn tooltip: did not open above the pointer at the bottom (y {edge.tip_y})")
+        return 11
+
+    app.destroy()
+    edge.destroy()
+    print("sooryn tooltip: ok")
+    return 0

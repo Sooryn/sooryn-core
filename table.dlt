@@ -111,7 +111,6 @@ attach SoorynApp:
 
         commands: UIDrawList = self.commands
         commands.push_fill_rect(x, y, width, height, self.theme.surface)
-        commands.push_outline_rect(x, y, width, height, self.theme.border, self.theme.border_width)
         commands.push_fill_rect(x, y, width, self.tb_header_h, self.theme.background)
         self.push_commands(commands)
         return 1
@@ -315,10 +314,13 @@ attach SoorynApp:
             0
         )
 
+        # The outline last, so the header and the striped, hovered and
+        # selected rows never paint over it.
         commands: UIDrawList = self.commands
+        commands.push_outline_rect(self.tb_x, self.tb_y, self.tb_w, self.tb_h, self.theme.border, self.theme.border_width)
+        self.push_commands(commands)
         if self.focus_id == self.tb_id:
             self.focus_ring_rounded(self.tb_x, self.tb_y, self.tb_w, self.tb_h, 0)
-        self.push_commands(commands)
         return self.tb_changed
 
     # Scroll the least amount that brings a row fully into view.

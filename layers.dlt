@@ -22,6 +22,8 @@
 SOORYN_LAYER_BASE: i32 = 0
 SOORYN_LAYER_POPUP: i32 = 1
 SOORYN_LAYER_MODAL: i32 = 2
+# Above a dialog too, so a control inside one can have a tooltip.
+SOORYN_LAYER_TOOLTIP: i32 = 3
 # How long a popup and a dialog take to fade in, in microseconds.
 SOORYN_FADE_POPUP_US: i64 = 120000
 SOORYN_FADE_MODAL_US: i64 = 160000

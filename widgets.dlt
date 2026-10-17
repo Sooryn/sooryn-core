@@ -394,21 +394,6 @@ attach SoorynApp:
     # been hovered for at least ~30 frames (≈500 ms at 60 fps).
     # Call at end of frame after all widgets have laid out.
     # ---------------------------------------------------------------
-    fun tooltip(self, widget_id_hash: i64, text: str):
-        if self.hover_id != widget_id_hash:
-            return
-        if self.hover_frames < 30:
-            return
-        tx: i32 = self.input_state.mouse.x + 12
-        ty: i32 = self.input_state.mouse.y + 12
-        w: i32 = self.text_width(text) + 16
-        h: i32 = self.text_height() + 12
-        commands: UIDrawList = self.commands
-        commands.push_fill_rounded_rect(tx, ty, w, h, 4, self.theme.surface_active)
-        commands.push_outline_rounded_rect(tx, ty, w, h, 4, self.theme.border, 1)
-        commands.push_text(tx + 8, ty + 6, text, self.theme.text)
-        self.push_commands(commands)
-
     # ---------------------------------------------------------------
     # Text input — single-line editable field.
     # caller provides a byte buffer and its max length (excluding the
@@ -557,10 +542,14 @@ attach SoorynApp:
     # widget drawn until panel_end stays inside the panel's inner rect.
     # When the window shrinks, widgets inside the panel visually clip
     # at the panel boundary instead of spilling into neighbours.
+    # A card: the surface with a quiet border and corners a little rounder
+    # than a control's, as current design systems draw one. Its content is
+    # clipped to the rectangle inside the border.
     fun panel_begin(self, x: i32, y: i32, width: i32, height: i32):
         commands: UIDrawList = self.commands
-        commands.push_fill_rect(x, y, width, height, self.theme.surface)
-        commands.push_outline_rect(x, y, width, height, self.theme.border, self.theme.border_width)
+        r: i32 = self.panel_radius(width, height)
+        commands.push_fill_rounded_rect(x, y, width, height, r, self.theme.surface)
+        commands.push_outline_rounded_rect(x, y, width, height, r, self.theme.border, self.theme.border_width)
         self.push_commands(commands)
         # Inner clip rect leaves room for the border.
         pad: i32 = self.theme.border_width
@@ -570,6 +559,16 @@ attach SoorynApp:
 
     fun panel_end(self):
         self.pop_clip()
+
+    fun panel_radius(self, width: i32, height: i32) -> i32:
+        r: i32 = self.theme.corner_radius + 2
+        if r < 0:
+            r = 0
+        if r > width / 2:
+            r = width / 2
+        if r > height / 2:
+            r = height / 2
+        return r
 
     # ======================================================================
     #  Phase γ: scrollbar + scrollable region + tab bar + dropdown + modal

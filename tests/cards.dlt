@@ -1,0 +1,57 @@
+import sooryn
+
+# A panel is a card with rounded corners; a table's outline is drawn over its
+# header and rows, so a selected or striped row never paints over its edge.
+
+fun same_rgb(a: i32, b: i32) -> i32:
+    if (a & 16777215) == (b & 16777215):
+        return 1
+    return 0
+
+fun main() -> i32:
+    app: SoorynApp = SoorynApp.headless(400, 300)
+    selected: i64 = app.alloc_int(1)
+    scroll: i64 = app.alloc_int(0)
+    if app.begin_offscreen() == 1:
+        app.panel_begin(20, 20, 160, 100)
+        app.panel_end()
+        app.table_begin(200, 20, 180, 200, 24, 20, scroll, selected)
+        app.table_column("Name", 120)
+        app.table_headers_end()
+        i: i32 = app.table_first_visible()
+        while i <= app.table_last_visible():
+            if app.table_row(i) == 1:
+                app.table_cell(0, "row")
+            i = i + 1
+        app.table_end()
+        app.end()
+
+    # The panel's corner is cut round: its very corner shows the page.
+    if same_rgb(app.pixel_at(20, 20), app.theme.background) == 0:
+        print("sooryn cards: the panel's corner is square")
+        return 1
+    # Its straight edge is still drawn.
+    if same_rgb(app.pixel_at(20, 70), app.theme.border) == 0:
+        print("sooryn cards: the panel's side lost its border")
+        return 2
+    if same_rgb(app.pixel_at(100, 70), app.theme.surface) == 0:
+        print("sooryn cards: the panel is not filled")
+        return 3
+
+    # Header: 24 + 6 = 30 tall. Row 1 (selected) is at 20 + 30 + 24 = 74.
+    if same_rgb(app.pixel_at(200, 30), app.theme.border) == 0:
+        print("sooryn cards: the table's header painted over its left edge")
+        return 4
+    if same_rgb(app.pixel_at(260, 20), app.theme.border) == 0:
+        print("sooryn cards: the table's header painted over its top edge")
+        return 5
+    if same_rgb(app.pixel_at(200, 86), app.theme.border) == 0:
+        print("sooryn cards: the selected row painted over the table's edge")
+        return 6
+    if same_rgb(app.pixel_at(260, 86), app.theme.accent) == 0:
+        print("sooryn cards: the selected row is not drawn")
+        return 7
+
+    app.destroy()
+    print("sooryn cards: ok")
+    return 0

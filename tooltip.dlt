@@ -1,0 +1,89 @@
+# ============================
+#  Sooryn Tooltip
+# ============================
+# A tooltip appears when the pointer has rested on a widget for half a
+# second, as the desktop's do, whether or not anything else happens in the
+# meantime: the delay asks for its own frame (wake_in), so an idle window
+# still shows it.
+#
+# It is placed once, when it appears, just below the pointer, and stays put
+# while the pointer moves within the widget. Near the window's right edge it
+# moves left, near the bottom it opens above the pointer, and it never
+# leaves the window. It is drawn above everything, dialogs included, fades
+# in, and goes away when the widget is pressed until the pointer leaves it.
+#
+#     app.tooltip(app.widget_id(110, x, y), "Saves the file")
+
+SOORYN_TOOLTIP_DELAY_US: i64 = 500000
+SOORYN_TOOLTIP_FADE_US: i64 = 100000
+# Below the pointer by about the height of the arrow cursor.
+SOORYN_TOOLTIP_BELOW: i32 = 20
+SOORYN_TOOLTIP_ABOVE: i32 = 6
+SOORYN_TOOLTIP_MARGIN: i32 = 4
+
+attach SoorynApp:
+    fun tooltip(self, widget_id_hash: i64, text: str):
+        # Hovered this frame: the widget, drawn just before, said so.
+        if self.hover_seen == 0 or self.hover_id != widget_id_hash or widget_id_hash == 0:
+            if self.tip_id == widget_id_hash:
+                self.tip_id = 0
+            if self.tip_hidden_id == widget_id_hash:
+                self.tip_hidden_id = 0
+            return
+        mouse: UIMouseState = self.input_state.mouse
+        if mouse.left_down == 1 or mouse.right_down == 1:
+            # A press means the person is using the widget, not asking
+            # about it: hide until the pointer leaves.
+            self.tip_hidden_id = widget_id_hash
+            self.tip_id = 0
+            return
+        if self.tip_hidden_id == widget_id_hash:
+            return
+        waited: i64 = self.frame_time_us - self.hover_since_us
+        if waited < SOORYN_TOOLTIP_DELAY_US:
+            self.wake_in(SOORYN_TOOLTIP_DELAY_US - waited)
+            return
+
+        w: i32 = self.text_width(text) + 16
+        h: i32 = self.text_height() + 10
+        if self.tip_id != widget_id_hash:
+            self.tip_id = widget_id_hash
+            self.tip_shown_us = 0
+            self.place_tooltip(mouse.x, mouse.y, w, h)
+        else:
+            self.tip_shown_us = self.tip_shown_us + self.frame_delta_us
+
+        self.enter_layer(SOORYN_LAYER_TOOLTIP)
+        start: i32 = self.commands.count
+        r: i32 = self.theme.corner_radius
+        if r > h / 2:
+            r = h / 2
+        self.elevation(self.tip_x, self.tip_y, w, h, r, 2)
+        commands: UIDrawList = self.commands
+        commands.push_fill_rounded_rect(self.tip_x, self.tip_y, w, h, r, self.theme.surface_active)
+        commands.push_outline_rounded_rect(self.tip_x, self.tip_y, w, h, r, self.theme.border, 1)
+        commands.push_text(self.tip_x + 8, self.tip_y + (h - self.text_height()) / 2, text, self.theme.text)
+        self.push_commands(commands)
+        self.fade_commands(start, self.fade_amount(self.tip_shown_us, SOORYN_TOOLTIP_FADE_US))
+        self.leave_layer()
+
+    # Where a w x h tooltip for a pointer at (px, py) goes: below it, moved
+    # back inside the window at the right, above it when there is no room
+    # below, and never past the window's edges.
+    fun place_tooltip(self, px: i32, py: i32, w: i32, h: i32):
+        limit_x: i32 = self.canvas_w - SOORYN_TOOLTIP_MARGIN
+        limit_y: i32 = self.canvas_h - SOORYN_TOOLTIP_MARGIN
+        x: i32 = px
+        if self.is_rtl() == 1:
+            x = px - w
+        if x + w > limit_x:
+            x = limit_x - w
+        if x < SOORYN_TOOLTIP_MARGIN:
+            x = SOORYN_TOOLTIP_MARGIN
+        y: i32 = py + SOORYN_TOOLTIP_BELOW
+        if y + h > limit_y:
+            y = py - SOORYN_TOOLTIP_ABOVE - h
+        if y < SOORYN_TOOLTIP_MARGIN:
+            y = SOORYN_TOOLTIP_MARGIN
+        self.tip_x = x
+        self.tip_y = y

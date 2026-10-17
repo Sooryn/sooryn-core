@@ -350,6 +350,25 @@ them. It widens and brightens under the pointer and while dragged.
 content that fits; `tests/focusscroll.dlt` covers Tab, Shift+Tab, wrapping,
 clicks and identity while scrolling.
 
+## Tooltips and cards
+
+`app.tooltip(id, text)` after a widget gives it a tooltip that behaves like
+the desktop's:
+
+- It appears once the pointer has rested on the widget for 500 ms, and an
+  idle window still shows it: the delay asks for its own frame
+  (`app.wake_in(us)`, which any widget can use for something due later).
+- It opens just below the pointer and stays there while the pointer moves
+  on the widget. Near the right edge it moves left, near the bottom it
+  opens above the pointer, and it never leaves the window.
+- It is drawn above everything, dialogs included, and fades in.
+- Pressing the widget hides it until the pointer leaves.
+
+Panels are cards with corners a little rounder than a control's. A
+table's outline is drawn last, so its header and its striped and selected
+rows never paint over its edge. `tests/tooltip.dlt` and `tests/cards.dlt`
+cover both.
+
 ## Layers and hit testing
 
 What cannot be seen cannot be clicked, and what is on top gets the pointer,
